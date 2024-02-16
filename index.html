@@ -2,10 +2,11 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8">
-		<title>My first three.js app</title>
+		<title>Color compression demo</title>
 		<style>
 			body {
 				margin: 0px;
+				background-color: #222;
 			}
 			.ui {
 				position: absolute;
@@ -27,27 +28,29 @@
 				font-weight: 600;
 				padding-bottom: .2em;
 			}
+			.sliders {
+				display: flex;
+				flex-direction: column;
+			}
 			</style>
 	</head>
 	<body>
 		<div class="ui">
 			<div class="heading">Settings</div>
-			<div>
-				<input type="range" min="1" max="100" value="100" id="r_scale" name="r_scale">
-				<label for="scale">Red resolution: <span id="r_label">1</span></label>
+			<div id="sliders" class="sliders">
+				<input type="range" min="0" max="100" value="100" id="r_scale" name="r_scale">
+				<label for="scale">Red scale: <span id="r_label">1</span></label>
+				<input type="range" min="0" max="100" value="100" id="g_scale" name="g_scale">
+				<label for="scale">Green scale: <span id="g_label">1</span></label>
+				<input type="range" min="0" max="100" value="100" id="b_scale" name="b_scale">
+				<label for="scale">Blue scale: <span id="b_label">1</span></label>
 			</div>
 			<div>
-				<input type="range" min="1" max="100" value="100" id="g_scale" name="g_scale">
-				<label for="scale">Green resolution: <span id="g_label">1</span></label>
-			</div>
-			<div>
-				<input type="range" min="1" max="100" value="100" id="b_scale" name="b_scale">
-				<label for="scale">Blue resolution: <span id="b_label">1</span></label>
-			</div>
-			<div>
-				<label>Bfefore: <span id="file_size"></span> KB After: <span id="reduced_file_size"></span> KB</label>
+				<p>Original Size: <span id="file_size"></span> KB</p><p>Compressed Size: <span id="reduced_file_size"></span> KB</p>
 			</div>
 		</div>
+		<canvas style="display: none;" id="virtualcanvas">Your browser does not seem to support canvases.</canvas>
+		<canvas id="glcanvas">Your browser does not seem to support canvases.</canvas>
 		<script type="module" src="/main.js"></script>
 	</body>
 </html>

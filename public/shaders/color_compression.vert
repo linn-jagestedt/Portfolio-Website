@@ -1,7 +1,15 @@
-varying vec2 vUv;
+#version 300 es
+precision highp float;
+
+in vec3 aPos;
+in vec2 aTexcoord;
+
+uniform mat4 modelView;
+
+out vec2 Texcoord;
 
 void main() 
 {
-    vUv = uv;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    Texcoord = aTexcoord;
+    gl_Position = modelView * vec4(aPos, 1.0);
 }
