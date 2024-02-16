@@ -1,8 +1,5 @@
 {
-  "dependencies": {
-    "three": "^0.161.0"
-  },
   "devDependencies": {
-    "vite": "^5.1.1"
+    "@11ty/eleventy": "^2.0.1"
   }
 }
