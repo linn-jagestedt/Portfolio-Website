@@ -2,14 +2,16 @@ import createShader from "/js/utils/shader.js";
 import Rect from "/js/utils/rect.js"
 import { loadImage, pushImageData } from "/js/utils/texture.js";
 import createMaterix from "/js/utils/matrix.js";
-import { getRenderContext, getScreenSize } from "/js/utils/renderContext.js";
+import { getRenderContext, getDrawingBufferSize, setDrawingBufferSize } from "/js/utils/renderContext.js";
 
 const GL = getRenderContext();
-let screenSize = getScreenSize();
 
 const texture = GL.createTexture();
-const image = await loadImage("/textures/noise-free/t049.png");
+const image = await loadImage("/textures/palm.jpg");
 pushImageData(GL, texture, image);
+
+setDrawingBufferSize(image.width * 2, image.height * 2);
+var drawingBufferSize = getDrawingBufferSize();
 
 /* Rect 1 */
 
@@ -19,7 +21,7 @@ let fragmentSource = await (await fetch('/shaders/simple.frag')).text();
 const SimpleShader = createShader(GL, vertexSource, fragmentSource);
 GL.useProgram(SimpleShader);
 GL.uniform2f(GL.getUniformLocation(SimpleShader, "textureSize"), image.width, image.height);
-GL.uniform2f(GL.getUniformLocation(SimpleShader, "screenSize"), screenSize.x, screenSize.y);
+GL.uniform2f(GL.getUniformLocation(SimpleShader, "drawingBufferSize"), drawingBufferSize.x, drawingBufferSize.y);
 GL.uniformMatrix4fv(
 	GL.getUniformLocation(SimpleShader, "modelView"), 
 	true, 
@@ -37,7 +39,7 @@ const CompressionShader = createShader(GL, vertexSource, fragmentSource);
 
 GL.useProgram(CompressionShader);
 GL.uniform2f(GL.getUniformLocation(CompressionShader, "textureSize"), image.width, image.height);
-GL.uniform2f(GL.getUniformLocation(CompressionShader, "screenSize"), screenSize.x, screenSize.y);
+GL.uniform2f(GL.getUniformLocation(CompressionShader, "drawingBufferSize"), drawingBufferSize.x, drawingBufferSize.y);
 GL.uniform3f(GL.getUniformLocation(CompressionShader, "rgbScale"), 1, 1, 1);
 GL.uniformMatrix4fv(
 	GL.getUniformLocation(CompressionShader, "modelView"), 
@@ -92,10 +94,10 @@ function draw() {
 }
 
 addEventListener("resize", (event) => {
-	let screenSize = getScreenSize();
+	drawingBufferSize = getDrawingBufferSize();
 	GL.useProgram(SimpleShader);
-	GL.uniform2f(GL.getUniformLocation(SimpleShader, "screenSize"), screenSize.x, screenSize.y);
+	GL.uniform2f(GL.getUniformLocation(SimpleShader, "drawingBufferSize"), drawingBufferSize.x, drawingBufferSize.y);
 	GL.useProgram(CompressionShader);
-	GL.uniform2f(GL.getUniformLocation(CompressionShader, "screenSize"), screenSize.x, screenSize.y);
+	GL.uniform2f(GL.getUniformLocation(CompressionShader, "drawingBufferSize"), drawingBufferSize.x, drawingBufferSize.y);
 	draw();
 });

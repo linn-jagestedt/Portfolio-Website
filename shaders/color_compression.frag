@@ -17,9 +17,9 @@ void main()
     vec2 targetResG = textureSize * rgbScale.g * 2.0;
     vec2 targetResB = textureSize * rgbScale.b * 2.0;
 
-    vec2 stepR = 1.0 / targetResR;
-    vec2 stepG = 1.0 / targetResG;
-    vec2 stepB = 1.0 / targetResB;
+    vec2 stepR = 1.0 / (targetResR);
+    vec2 stepG = 1.0 / (targetResG);
+    vec2 stepB = 1.0 / (targetResB);
 
     vec2 uvRoundR = vec2(round(Texcoord.x * targetResR.x) / targetResR.x, round(Texcoord.y * targetResR.y) / targetResR.y);
     vec2 uvRoundG = vec2(round(Texcoord.x * targetResG.x) / targetResG.x, round(Texcoord.y * targetResG.y) / targetResG.y);
@@ -34,8 +34,8 @@ void main()
             vec2 neighbourUvB = vec2(uvRoundB.x + float(i) * stepB.x, uvRoundB.y + float(j) * stepB.y);
 
             color.r += texture(colorTexture, neighbourUvR).r / 9.0f;    
-            color.g += texture(colorTexture, neighbourUvG).g / 9.0f;            
-            color.b += texture(colorTexture, neighbourUvB).b / 9.0f;            
+            color.g += texture(colorTexture, neighbourUvG).g / 9.0f; 
+            color.b += texture(colorTexture, neighbourUvB).b / 9.0f;        
         }
     }
 
