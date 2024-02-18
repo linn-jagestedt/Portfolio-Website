@@ -1,25 +1,43 @@
+import createMatrix from "/js/utils/matrix.js"
+
 export default class Rect 
 {
-    constructor(GL, shader, texture) {
+    constructor(GL, shader, scale, position) {
         this.GL = GL;
         this.shader = shader;
-        this.texture = texture; 
-        
-        this.vertexBuffers = this.createVertexArray();
+        this.position = position;
+        this.scale = scale;
+        this.vertexArray = this.createVertexArray();
+    }
+
+    setPosition(position) {
+        this.position = position;
+    }
+
+    setScale(scale) {
+        this.scale = scale;
     }
 
     free() {
-        buffers.forEach(element => {
-            this.GL.deleteBuffer(element);
-        });
-
-        this.GL.deleteTexture(this.texture);
-        this.GL.DeleteProgram(this.shader);
+        this.GL.delteVertexArray(this.vertexArray);
     }
 
     draw() {
         this.GL.useProgram(this.shader);
-        this.GL.bindTexture(this.GL.TEXTURE_2D, this.texture) 
+
+        this.GL.uniformMatrix4fv(
+            this.GL.getUniformLocation(this.shader, "modelView"), 
+            true, 
+            createMatrix(
+                this.scale.x, 
+                this.scale.y, 
+                this.scale.z, 
+                this.position.x, 
+                this.position.y, 
+                this.position.z
+            )
+        );
+
         this.GL.drawElements(this.GL.TRIANGLES, 6, this.GL.UNSIGNED_SHORT, 0);
     }
 

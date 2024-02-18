@@ -3,6 +3,11 @@ body {
     overflow: hidden;
     background-color: #222;
 }
+.heading {
+    font-size: 20px;
+    margin-bottom: 20px;
+}
+
 .optionsPanel {
     position: absolute;
     left: 0;
