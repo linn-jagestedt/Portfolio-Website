@@ -1,5 +1,10 @@
-export default function createShader(GL, vertexSource, fragmentSource) 
+import { GL } from "/js/utils/renderContext.js";
+
+export default async function createShader(vertexFile, fragmentFile) 
 {
+	let vertexSource = await (await fetch(vertexFile)).text();
+	let fragmentSource = await (await fetch(fragmentFile)).text();
+
 	let vertexShader = GL.createShader(GL.VERTEX_SHADER);
 	GL.shaderSource(vertexShader, vertexSource);
 	GL.compileShader(vertexShader);

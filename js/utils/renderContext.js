@@ -3,7 +3,7 @@ const GL = canvas.getContext("webgl2");
 
 var drawingBufferSize;
 
-export function getRenderContext() {
+function initRenderContext() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
@@ -30,11 +30,11 @@ export function getRenderContext() {
     return GL;
 }
 
-export function getDrawingBufferSize() {
+function getBufferSize() {
     return drawingBufferSize == undefined ? { x : canvas.width, y : canvas.height } : drawingBufferSize;
 }
 
-export function setDrawingBufferSize(x, y) {
+function setBufferSize(x, y) {
     drawingBufferSize = { x : x, y : y };
     canvas.width = drawingBufferSize.x;
     canvas.height = drawingBufferSize.y;
@@ -44,3 +44,5 @@ export function setDrawingBufferSize(x, y) {
 
     GL.viewport(0, 0, GL.drawingBufferWidth, GL.drawingBufferHeight);
 }
+
+export { GL, initRenderContext, getBufferSize, setBufferSize };

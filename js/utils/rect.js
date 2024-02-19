@@ -1,32 +1,32 @@
-import createMatrix from "/js/utils/matrix.js"
+import { createMatrix } from "/js/utils/matrix.js"
+import { GL } from "/js/utils/renderContext.js";
 
 export default class Rect 
 {
-    constructor(GL, shader, scale, position) {
-        this.GL = GL;
+    constructor(shader, scale_x, scale_y, scale_z, position_x, position_y, position_z) {
         this.shader = shader;
-        this.position = position;
-        this.scale = scale;
+        this.position = { x : position_x, y : position_y, z : position_z };
+        this.scale = { x : scale_x, y : scale_y, z : scale_z };
         this.vertexArray = this.createVertexArray();
     }
 
-    setPosition(position) {
-        this.position = position;
+    setPosition(position_x, position_y, position_z) {
+        this.position = { x : position_x, y : position_y, z : position_z };
     }
 
-    setScale(scale) {
-        this.scale = scale;
+    setScale(scale_x, scale_y, scale_z) {
+        this.scale = { x : scale_x, y : scale_y, z : scale_z };
     }
 
     free() {
-        this.GL.delteVertexArray(this.vertexArray);
+        GL.delteVertexArray(this.vertexArray);
     }
 
     draw() {
-        this.GL.useProgram(this.shader);
+        GL.useProgram(this.shader);
 
-        this.GL.uniformMatrix4fv(
-            this.GL.getUniformLocation(this.shader, "modelView"), 
+        GL.uniformMatrix4fv(
+            GL.getUniformLocation(this.shader, "modelView"), 
             true, 
             createMatrix(
                 this.scale.x, 
@@ -38,7 +38,7 @@ export default class Rect
             )
         );
 
-        this.GL.drawElements(this.GL.TRIANGLES, 6, this.GL.UNSIGNED_SHORT, 0);
+        GL.drawElements(GL.TRIANGLES, 6, GL.UNSIGNED_SHORT, 0);
     }
 
     createVertexArray() {	
@@ -62,26 +62,26 @@ export default class Rect
             0,  0,
         ]);
         
-        let id = this.GL.createVertexArray();
-        this.GL.bindVertexArray(id);
+        let id = GL.createVertexArray();
+        GL.bindVertexArray(id);
 
-        let indexBuffer = this.GL.createBuffer();
-        this.GL.bindBuffer(this.GL.ELEMENT_ARRAY_BUFFER, indexBuffer);
-        this.GL.bufferData(this.GL.ELEMENT_ARRAY_BUFFER, indecies,  this.GL.STATIC_DRAW);
+        let indexBuffer = GL.createBuffer();
+        GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, indexBuffer);
+        GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, indecies,  GL.STATIC_DRAW);
 
-        this.GL.enableVertexAttribArray(0);
+        GL.enableVertexAttribArray(0);
         
-        let positionBuffer = this.GL.createBuffer();
-        this.GL.bindBuffer(this.GL.ARRAY_BUFFER, positionBuffer);
-        this.GL.bufferData(this.GL.ARRAY_BUFFER, position, this.GL.STATIC_DRAW);
-        this.GL.vertexAttribPointer(0, 3, this.GL.FLOAT, false, 0, 0);
+        let positionBuffer = GL.createBuffer();
+        GL.bindBuffer(GL.ARRAY_BUFFER, positionBuffer);
+        GL.bufferData(GL.ARRAY_BUFFER, position, GL.STATIC_DRAW);
+        GL.vertexAttribPointer(0, 3, GL.FLOAT, false, 0, 0);
         
-        this.GL.enableVertexAttribArray(1);
+        GL.enableVertexAttribArray(1);
         
-        let texcoordBuffer = this.GL.createBuffer();
-        this.GL.bindBuffer(this.GL.ARRAY_BUFFER, texcoordBuffer);
-        this.GL.bufferData(this.GL.ARRAY_BUFFER, texcoords,  this.GL.STATIC_DRAW);
-        this.GL.vertexAttribPointer(1, 2,  this.GL.FLOAT, false, 0, 0);
+        let texcoordBuffer = GL.createBuffer();
+        GL.bindBuffer(GL.ARRAY_BUFFER, texcoordBuffer);
+        GL.bufferData(GL.ARRAY_BUFFER, texcoords,  GL.STATIC_DRAW);
+        GL.vertexAttribPointer(1, 2,  GL.FLOAT, false, 0, 0);
 
         return id;
     }

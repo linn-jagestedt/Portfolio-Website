@@ -1,4 +1,4 @@
-export default function createMatrix(scaleX, scaleY, scaleZ, positionX, positionY, positionZ) 
+export function createMatrix(scaleX, scaleY, scaleZ, positionX, positionY, positionZ) 
 {
 	return [
         scaleX, 0, 0, positionX,

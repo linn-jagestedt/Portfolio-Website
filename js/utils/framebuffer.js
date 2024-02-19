@@ -1,34 +1,39 @@
 import { createTexture } from "/js/utils/texture.js";
+import { GL } from "/js/utils/renderContext.js";
 
-export class Framebuffer {
-    constructor(GL, size) {
-        this.GL = GL;
-        this.size = { x : size.x, y : size.y };
-        this.framebuffer = this.GL.createFramebuffer();
-        this.texture = createTexture(this.GL, size);
+const framebufferTextures = new Map();
+
+export function createFrameBuffer(width, height) {
+    let framebuffer = GL.createFramebuffer();
+    let texture = createTexture(width, height);
+
+    GL.bindFramebuffer(GL.FRAMEBUFFER, framebuffer);  
+    GL.framebufferTexture2D(GL.FRAMEBUFFER, GL.COLOR_ATTACHMENT0, GL.TEXTURE_2D, texture, 0);  
+    GL.bindFramebuffer(GL.FRAMEBUFFER, null);
+
+    framebufferTextures.set(framebuffer, texture);
     
-        this.GL.bindFramebuffer(this.GL.FRAMEBUFFER, this.framebuffer);  
-        this.GL.framebufferTexture2D(this.GL.FRAMEBUFFER, this.GL.COLOR_ATTACHMENT0, this.GL.TEXTURE_2D, this.texture, 0);  
-        this.GL.bindFramebuffer(this.GL.FRAMEBUFFER, null);
-    }
+    return framebuffer;
+}
 
-    setSize(size) {
-        this.GL.deleteFramebuffer(this.framebuffer);
-        this.framebuffer = this.GL.createFramebuffer();
+export function setFrameBufferSize(framebuffer, width, height) {
+    let texture = framebufferTextures.get(framebuffer);
 
-        this.GL.bindTexture(this.GL.TEXTURE_2D, this.texture);
-        this.GL.texImage2D(this.GL.TEXTURE_2D, 0, this.GL.RGBA, size.x, size.y, 0, this.GL.RGBA, this.GL.UNSIGNED_BYTE, null);
+    GL.bindTexture(GL.TEXTURE_2D, texture);
+    GL.texImage2D(GL.TEXTURE_2D, 0, GL.RGBA, width, height, 0, GL.RGBA, GL.UNSIGNED_BYTE, null);
 
-        this.GL.bindFramebuffer(this.GL.FRAMEBUFFER, this.framebuffer);  
-        this.GL.framebufferTexture2D(this.GL.FRAMEBUFFER, this.GL.COLOR_ATTACHMENT0, this.GL.TEXTURE_2D, this.texture, 0); 
-        this.GL.bindFramebuffer(this.GL.FRAMEBUFFER, null); 
-    }
+    GL.bindFramebuffer(GL.FRAMEBUFFER, framebuffer);  
+    GL.framebufferTexture2D(GL.FRAMEBUFFER, GL.COLOR_ATTACHMENT0, GL.TEXTURE_2D, texture, 0); 
+    GL.bindFramebuffer(GL.FRAMEBUFFER, null); 
+}
 
-    bind(){
-        this.GL.bindFramebuffer(this.GL.FRAMEBUFFER, this.framebuffer);  
-    }
+export function getFrameBufferTexture(framebuffer) {
+    return framebufferTextures.get(framebuffer);
+}
 
-    unbind() {
-        this.GL.bindFramebuffer(this.GL.FRAMEBUFFER, null);
-    }
+
+export function freeFrameBuffer() {
+    let texture = framebufferTextures.get(framebuffer);
+    GL.deleteTexture(texture);
+    GL.deleteFramebuffer(framebuffer);
 }
