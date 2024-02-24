@@ -1,0 +1,19 @@
+---
+title: Image processing demos
+permalink: /index.html
+layout: layouts/layout.liquid
+eleventyExcludeFromCollections: true
+---
+
+<ul class="page-list">
+    {% for page in collections.all %}
+        <a href="{{page.url}}">
+            <li>
+                <h3>{{ page.data.title }}</h3>
+                <h3>{{ page.data.description }}</h3>
+                <img src="{{ page.data.thumbnail }}" />
+            </li>
+        </a>
+    {% endfor %}
+</div>
+    

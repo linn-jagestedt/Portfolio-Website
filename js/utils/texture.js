@@ -1,6 +1,6 @@
 import { GL } from "/js/utils/renderContext.js"
 
-export async function loadImage(imageSrc) {
+export async function loadImageFromSrc(imageSrc) {
 	return new Promise((resolve, reject) => {
 		let image = new Image();
 		image.src = imageSrc;
@@ -30,19 +30,41 @@ export async function transformImageData(image, transform)
   		imageData.data[i + 2] = data[2]; 
 	}
 	
-	ctx.putImageData(imageData, 0, 0);
-
-	return await loadImage(virtualcanvas.toDataURL());
+	return imageData;
 }
 
-export async function scaleImageData(image, scale) 
+const YCbCrTransform = [
+	0.299,  0.587,  0.114,
+   -0.169, -0.331,  0.500,
+	0.500, -0.419, -0.081,
+];
+
+export async function convertToYCbCr(image) 
 {
-	virtualcanvas.width = image.width * scale;
-	virtualcanvas.height = image.width * scale;
+	console.log("starting convertion");
 
-	ctx.drawImage(image, 0, 0, image.width, image.height, 0, 0, image.width * scale, image.width * scale);
+	virtualcanvas.width = image.width;
+	virtualcanvas.height = image.height;
 
-	return await loadImage(virtualcanvas.toDataURL());
+	ctx.drawImage(image, 0, 0);
+
+	const imageData = ctx.getImageData(0, 0, image.width, image.height);
+
+	let r, g, b;
+
+	for (let i = 0; i < imageData.data.length; i += 4) {
+		r = 	  imageData.data[i] * YCbCrTransform[0] + imageData.data[i + 1] * YCbCrTransform[1] + imageData.data[i + 2] * YCbCrTransform[2];
+		g = 128 + imageData.data[i] * YCbCrTransform[3] + imageData.data[i + 1] * YCbCrTransform[4] + imageData.data[i + 2] * YCbCrTransform[5];
+		b = 128 + imageData.data[i] * YCbCrTransform[6] + imageData.data[i + 1] * YCbCrTransform[7] + imageData.data[i + 2] * YCbCrTransform[8]
+	
+		imageData.data[i + 0] = r;
+		imageData.data[i + 1] = g;
+		imageData.data[i + 2] = b;
+	}
+
+	console.log("convertion done!");
+	
+	return imageData;
 }
 
 export function setTextureFilter(id, filter) {
