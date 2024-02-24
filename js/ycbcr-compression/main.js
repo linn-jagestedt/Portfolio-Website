@@ -1,9 +1,9 @@
-import createShader from "/js/utils/shader.js";
-import Rect from "/js/utils/rect.js"
-import { uploadImageData, loadImageFromSrc, createTextureFromImage, setTextureFilter } from "/js/utils/texture.js";
-import { GL, initRenderContext, setRenderBufferSize } from "/js/utils/renderContext.js";
-import { createFrameBuffer,setFrameBufferSize, getFrameBufferTexture } from "/js/utils/framebuffer.js";
-import { nearest_checkbox, linear_checkbox, sliderY, sliderCb, sliderCr, reduced_file_size, file_size, image_file } from "/js/ycbcr-compression/settings.js";
+import createShader from "../utils/shader.js";
+import Rect from "../utils/rect.js"
+import { uploadImageData, loadImageFromSrc, createTextureFromImage, setTextureFilter } from "../utils/texture.js";
+import { GL, initRenderContext, setRenderBufferSize } from "../utils/renderContext.js";
+import { createFrameBuffer,setFrameBufferSize, getFrameBufferTexture } from "../utils/framebuffer.js";
+import { nearest_checkbox, linear_checkbox, sliderY, sliderCb, sliderCr, reduced_file_size, file_size, image_file } from "../ycbcr-compression/settings.js";
 
 nearest_checkbox.oninput = updateFilter;
 linear_checkbox.oninput = updateFilter;
@@ -24,8 +24,14 @@ const YCbCrTexture = createTextureFromImage(image);
 
 updateFileSize();
 
-const RGBToYCBCRShader = await createShader('/shaders/rgb_to_ycbcr.vert', '/shaders/rgb_to_ycbcr.frag');
-const YCbCrCombineShader = await createShader('/shaders/ycbcr_combine.vert', '/shaders/ycbcr_combine.frag');
+
+const RGBToYCBCRVert = await (await fetch(document.querySelector("#rgb-to-ycbcr-vert").src)).text();
+const RGBToYCBCRFrag = await (await fetch(document.querySelector("#rgb-to-ycbcr-frag").src)).text();
+const YCbCrCombineVert = await (await fetch(document.querySelector("#ycbcr-combine-vert").src)).text();
+const YCbCrCombineFrag = await (await fetch(document.querySelector("#ycbcr-combine-frag").src)).text();
+
+const RGBToYCBCRShader = await createShader(RGBToYCBCRVert, RGBToYCBCRFrag);
+const YCbCrCombineShader = await createShader(YCbCrCombineVert, YCbCrCombineFrag);
 
 GL.useProgram(YCbCrCombineShader);
 GL.uniform1i(GL.getUniformLocation(YCbCrCombineShader, "textureY"), 0);

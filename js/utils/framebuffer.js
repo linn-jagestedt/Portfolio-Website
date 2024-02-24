@@ -1,5 +1,5 @@
-import { createTexture } from "/js/utils/texture.js";
-import { GL } from "/js/utils/renderContext.js";
+import { createTexture } from "../utils/texture.js";
+import { GL } from "../utils/renderContext.js";
 
 const framebufferTextures = new Map();
 

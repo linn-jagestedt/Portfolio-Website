@@ -1,12 +1,18 @@
-import createShader from "/js/utils/shader.js";
-import Rect from "/js/utils/rect.js"
-import { uploadImageData, loadImageFromSrc, createTextureFromImage, setTextureFilter } from "/js/utils/texture.js";
-import { GL, initRenderContext, setRenderBufferSize } from "/js/utils/renderContext.js";
-import { createFrameBuffer,setFrameBufferSize, getFrameBufferTexture } from "/js/utils/framebuffer.js";
-import { nearest_checkbox, linear_checkbox, sliderR, sliderG, sliderB, reduced_file_size, file_size, image_file } from "/js/rgb-compression/settings.js";
+import createShader from "../utils/shader.js";
+import Rect from "../utils/rect.js"
+import { uploadImageData, loadImageFromSrc, createTextureFromImage, setTextureFilter } from "../utils/texture.js";
+import { GL, initRenderContext, setRenderBufferSize } from "../utils/renderContext.js";
+import { createFrameBuffer,setFrameBufferSize, getFrameBufferTexture } from "../utils/framebuffer.js";
+
+const nearest_checkbox = document.querySelector('#nearest');
+const linear_checkbox = document.querySelector('#linear');
 
 nearest_checkbox.oninput = updateFilter;
 linear_checkbox.oninput = updateFilter;
+
+const sliderR = document.querySelector('#r_scale');
+const sliderG = document.querySelector('#g_scale');
+const sliderB = document.querySelector('#b_scale');
 
 const labelR = sliderR.labels[0];
 const labelG = sliderG.labels[0];
@@ -16,6 +22,10 @@ updateSliderText(sliderR, labelR);
 updateSliderText(sliderG, labelG);
 updateSliderText(sliderB, labelB);
 
+const file_size = document.querySelector('#file_size');
+const reduced_file_size = document.querySelector('#reduced_file_size');
+const image_file = document.querySelector("#imageFile");
+
 let image = await loadImageFromSrc(document.querySelector("#image").src);
 
 initRenderContext(image.width, image.height); 
@@ -24,8 +34,13 @@ const Texture = createTextureFromImage(image);
 
 updateFileSize();
 
-const SimpleShader = await createShader('/shaders/simple.vert', '/shaders/simple.frag');
-const RGBCombineShader = await createShader('/shaders/rgb_combine.vert', '/shaders/rgb_combine.frag');
+const SimpleVert = await (await fetch(document.querySelector("#simple-vert").src)).text();
+const SimpleFrag = await (await fetch(document.querySelector("#simple-frag").src)).text();
+const RGBCombineVert = await (await fetch(document.querySelector("#rgb-combine-vert").src)).text();
+const RGBCombineFrag = await (await fetch(document.querySelector("#rgb-combine-frag").src)).text();
+
+const SimpleShader = await createShader(SimpleVert, SimpleFrag);
+const RGBCombineShader = await createShader(RGBCombineVert, RGBCombineFrag);
 
 GL.useProgram(RGBCombineShader);
 GL.uniform1i(GL.getUniformLocation(RGBCombineShader, "textureR"), 0);

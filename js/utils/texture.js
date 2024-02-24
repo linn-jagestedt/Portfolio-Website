@@ -1,4 +1,4 @@
-import { GL } from "/js/utils/renderContext.js"
+import { GL } from "../utils/renderContext.js"
 
 export async function loadImageFromSrc(imageSrc) {
 	return new Promise((resolve, reject) => {

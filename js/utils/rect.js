@@ -1,5 +1,5 @@
-import { createMatrix } from "/js/utils/matrix.js"
-import { GL } from "/js/utils/renderContext.js";
+import { createMatrix } from "../utils/matrix.js"
+import { GL } from "../utils/renderContext.js";
 
 export default class Rect 
 {

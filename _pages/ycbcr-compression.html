@@ -37,3 +37,8 @@ thumbnail: textures/palm.jpg
 <canvas style="display: none;" id="virtualcanvas">Your browser does not seem to support canvases.</canvas>
 <script defer type="module" src="/js/ycbcr-compression/main.js"></script>
 <script defer type="module" src="/js/ycbcr-compression/settings.js"></script>
+
+<script id="rgb-to-ycbcr-vert" src="/shaders/rgb_to_ycbcr.vert" type="x-shader/x-vertex"></script>
+<script id="rgb-to-ycbcr-frag" src="/shaders/rgb_to_ycbcr.frag" type="x-shader/x-fragment"></script>
+<script id="ycbcr-combine-vert" src="/shaders/ycbcr_combine.vert" type="x-shader/x-vertex"></script>
+<script id="ycbcr-combine-frag" src="/shaders/ycbcr_combine.frag" type="x-shader/x-fragment"></script>
