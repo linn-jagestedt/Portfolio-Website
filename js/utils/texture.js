@@ -13,6 +13,61 @@ export async function loadImageFromSrc(imageSrc) {
 const virtualcanvas = document.querySelector("#virtualcanvas"); 
 const ctx = virtualcanvas.getContext("2d");
 
+function getFrequencyStrength(data, k, N) {
+	let reR = 0;
+	//let reG = 0;
+	//let reB = 0;
+
+	let imR = 0;
+	//let imG = 0;
+	//let imB = 0;
+
+	for (let n = 0; n < N; n++) {
+		let expIm = Math.sin(-(2 * Math.PI * k * n) / N);
+		let expRe = Math.sqrt(1 - expIm * expIm);
+
+		reR += data[n * 4] * expRe;
+		imR +=  data[n * 4] * expIm;
+
+		//reG += data[n * 4 + 1] * expRe;
+		//imG += data[n * 4 + 1] * expIm;
+		
+		//reB += data[n * 4 + 2] * expRe;
+		//imB +=  data[n * 4 + 2] * expIm;
+	}
+	
+	return Math.sqrt((reR * reR) + (imR * imR));
+}
+
+export async function fourierTransform(image) 
+{
+	virtualcanvas.width = image.width;
+	virtualcanvas.height = image.height;
+
+	ctx.drawImage(image, 0, 0);
+
+	const imageData = ctx.getImageData(0, 0, image.width, image.height);
+
+	const fourierTransform = [];
+
+	let N = imageData.data.length / 4;
+
+	for (let i = 0; i < N; i++) {
+
+		fourierTransform.push(getFrequencyStrength(imageData.data, i, N));
+	}
+
+	for (let i = 0; i < fourierTransform.length; i++) {
+
+		imageData.data[i * 4 + 0] = fourierTransform[i];
+		imageData.data[i * 4 + 1] = fourierTransform[i];
+		imageData.data[i * 4 + 2] = fourierTransform[i];
+
+	}
+
+	return imageData;
+}
+
 export async function transformImageData(image, transform) 
 {
 	virtualcanvas.width = image.width;

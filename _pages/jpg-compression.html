@@ -1,0 +1,29 @@
+---
+title: JPG compression
+permalink: /jpg-compression.html
+layout: layouts/layout.liquid
+thumbnail: textures/palm.jpg
+---
+
+<div class="container">
+	<div class="optionsPanel">
+		<h3>Settings</h3>
+		<div id="sliders" class="sliders">
+			<label for="compression">Compression: </label>
+			<input id="compression" type="range" min="1" max="100" value="100">
+		</div>
+		<div>
+			<p>Original Size: <span id="file_size"></span></p><p>Compressed Size: <span id="reduced_file_size"></span></p>
+		</div>
+		<input id="imageFile" type="file" accept="image/*">
+	</div>
+	<main>
+		<img id="image" src="/textures/t039.png"/>
+		<canvas id="glcanvas">Your browser does not seem to support canvases.</canvas>
+	</main>
+</div>
+<canvas style="display: none;" id="virtualcanvas">Your browser does not seem to support canvases.</canvas>
+<script defer type="module" src="/js/jpg-compression/main.js"></script>
+
+<script id="simple-vert" src="/shaders/simple.vert" type="x-shader/x-vertex"></script>
+<script id="simple-frag" src="/shaders/simple.frag" type="x-shader/x-fragment"></script>

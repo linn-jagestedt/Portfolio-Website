@@ -88,7 +88,7 @@ main img {
 
 main canvas {
     width: 1024px;
-    height: 1024px;
+    height: auto;
 }
 
 @media (max-width: 2400px) {
@@ -98,7 +98,7 @@ main canvas {
     
     main canvas {
         width: 512px;
-        height: 512px;
+        height: auto;
     }
 }
 
@@ -109,6 +109,6 @@ main canvas {
     
     main canvas {
         width: 256px;
-        height: 256px;
+        height: auto;
     }
 }
