@@ -2,17 +2,19 @@ const svg = d3.select("#simulation-area");
 const width = svg.attr("width");
 const height = svg.attr("height");
 
-var gradient = svg.append("defs").append("radialGradient")
-.attr("id", "mygrad")//id of the gradient
+const defs = svg.append("defs");
+
+const nodeGrad = defs.append("radialGradient")
+.attr("id", "nodegrad")//id of the gradient
 .attr("cx", "25%")
 .attr("cy", "25%");
 
-gradient.append("stop")
+nodeGrad.append("stop")
 .attr("offset", "0%")
 .style("stop-color", "#40a9f9")
 .style("stop-opacity", 1);
 
-gradient.append("stop")
+nodeGrad.append("stop")
 .attr("offset", "100%")
 .style("stop-color", "#000972")
 .style("stop-opacity", 1);
@@ -28,131 +30,10 @@ let restoreForce = parseFloat(document.getElementById("restore-force").value);
 let damping = parseFloat(document.getElementById("damping").value);
 
 /*
-/   Set initial values for the input labels
-*/
-
-let label = document.getElementById("restore-force").labels[0];
-label.innerText = label.innerText.split(":")[0];
-label.innerText += ": " + restoreForce.toFixed(2);
-
-label = document.getElementById("damping").labels[0];
-label.innerText = label.innerText.split(":")[0];
-label.innerText += ": " + damping.toFixed(2);
-
-/*
-/   Add event listeners to input elemenrs
-*/
-
-document.getElementById("toggle-simulation").addEventListener("click", () => {
-    isRunning = !isRunning;
-    document.getElementById("toggle-simulation").innerText = isRunning ? "Stop Simulation" : "Start Simulation";
-    if (isRunning) simulationLoop();
-});
-
-document.getElementById("rows").addEventListener("input", (e) => {
-    rows = parseInt(e.target.value, 10);
-    initializeGrid();
-});
-
-document.getElementById("cols").oninput = (e) => {
-    cols = parseInt(e.target.value, 10);
-    initializeGrid();
-}
-
-document.getElementById("restore-force").oninput = (e) => {
-    restoreForce = parseFloat(e.target.value);
-
-    let label = e.target.labels[0];
-    label.innerText = label.innerText.split(":")[0];
-    label.innerText += ": " + restoreForce.toFixed(2);
-}
-
-document.getElementById("damping").oninput = (e) => {
-    damping = parseFloat(e.target.value);
-
-    let label = e.target.labels[0];
-    label.innerText = label.innerText.split(":")[0];
-    label.innerText += ": " + damping.toFixed(2);
-}
-
-/*
-/   Mouse events
-*/
-
-let selectedNodes = [];
-
-const simulationArea = document.getElementById("simulation-area");
-
-function getMousePos(e) {
-    var rect = simulationArea.getBoundingClientRect();
-    return {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-    };
-}
-
-simulationArea.addEventListener("mousedown", (e) => 
-{
-    for (let i = 0; i < rows; i++) 
-    {
-        for (let j = 0; j < cols; j++) 
-        {
-            let mouse = getMousePos(e);
-
-            let diffx = Math.abs(mouse.x - positions[i][j][0]);
-            let diffy = Math.abs(mouse.y - positions[i][j][1]);
-
-            if (Math.sqrt(diffx * diffx + diffy * diffy) < nodeRadius + cursorRadius) {
-                selectedNodes.push({
-                    row: i,
-                    col: j
-                });
-            }
-        }
-    }
-});
-
-document.addEventListener("mousemove", (e) => 
-{
-    let mouse = getMousePos(e);
-    drawCursor("#cursor", [mouse], "#FF0000");
-
-    if (selectedNodes.length < 1) {
-        return;
-    }
-
-    // Add the movement delta to the node position
-    for (let i = 0; i < selectedNodes.length; i++) {   
-        positions[selectedNodes[i].row][selectedNodes[i].col][0] += e.movementX;
-        positions[selectedNodes[i].row][selectedNodes[i].col][1] += e.movementY;
-        lastPositions[selectedNodes[i].row][selectedNodes[i].col][0] += e.movementX;
-        lastPositions[selectedNodes[i].row][selectedNodes[i].col][1] += e.movementY;
-    }
-
-    if (!isRunning) {
-        render();
-    }
-});
-
-document.addEventListener("wheel", (e) => 
-{
-    cursorRadius += -0.1 * e.deltaY;
-
-    if (cursorRadius > 200) cursorRadius = 200;
-    if (cursorRadius < 20) cursorRadius = 20;
-
-    let mouse = getMousePos(e);
-    drawCursor("#cursor", [mouse], "#FF0000");
-});
-
-simulationArea.addEventListener("mouseleave", (e) => selectedNodes = []);
-simulationArea.addEventListener("mouseup", (e) => selectedNodes = []);
-
-/*
 / Variable delcarations
 */
 
-const padding = 100;
+const padding = 80;
 const mass = 1;
 const timeStep = 0.016;
 
@@ -263,8 +144,8 @@ function render()
     const lineData = prepareLineData();
 
     drawEdges("#structuralLines", lineData.structuralLinesData, "#000");
-    drawEdges("#shearLines", lineData.shearLinesData, "#1661bc");
-    drawNodes("#circles", positions.flat(), "url(#mygrad)");
+    //drawEdges("#shearLines", lineData.shearLinesData, "#1661bc");
+    drawNodes("#circles", positions.flat(), "url(#nodegrad)");
 }
 
 function drawNodes(selector, data, color) 
@@ -488,11 +369,11 @@ function calculateSpringForce(p1, p2, len)
     let force = [0, 0];
 
     if (diffx != 0) {
-        force[0] = -20 * restoreForce * (Math.abs(diffx) - len[0]) * (diffx / Math.abs(diffx));
+        force[0] = -40 * restoreForce * (Math.abs(diffx) - len[0]) * (diffx / Math.abs(diffx));
     }
 
     if (diffy != 0) {
-        force[1] = -20 * restoreForce * (Math.abs(diffy) - len[1]) * (diffy / Math.abs(diffy));
+        force[1] = -40 * restoreForce * (Math.abs(diffy) - len[1]) * (diffy / Math.abs(diffy));
     }
 
     return force;
@@ -501,10 +382,137 @@ function calculateSpringForce(p1, p2, len)
 function calculateDampingForce(v1, v2) 
 {
     return [
-        -2 * damping * (v1[0] - v2[0]),
-        -2 * damping * (v1[1] - v2[1])
+        -4 * damping * (v1[0] - v2[0]),
+        -4 * damping * (v1[1] - v2[1])
     ]
 } 
+
+/*
+/   Set initial values for the input labels
+*/
+
+let label = document.getElementById("restore-force").labels[0];
+label.innerText = label.innerText.split(":")[0];
+label.innerText += ": " + restoreForce.toFixed(2);
+
+label = document.getElementById("damping").labels[0];
+label.innerText = label.innerText.split(":")[0];
+label.innerText += ": " + damping.toFixed(2);
+
+/*
+/   Add event listeners to input elemenrs
+*/
+
+document.getElementById("toggle-simulation").addEventListener("click", () => {
+    isRunning = !isRunning;
+    document.getElementById("toggle-simulation").innerText = isRunning ? "Stop Simulation" : "Start Simulation";
+    if (isRunning) simulationLoop();
+});
+
+document.getElementById("rows").addEventListener("input", (e) => {
+    rows = parseInt(e.target.value, 10);
+    initializeGrid();
+});
+
+document.getElementById("cols").oninput = (e) => {
+    cols = parseInt(e.target.value, 10);
+    initializeGrid();
+}
+
+document.getElementById("restore-force").oninput = (e) => {
+    restoreForce = parseFloat(e.target.value);
+
+    let label = e.target.labels[0];
+    label.innerText = label.innerText.split(":")[0];
+    label.innerText += ": " + restoreForce.toFixed(2);
+}
+
+document.getElementById("damping").oninput = (e) => {
+    damping = parseFloat(e.target.value);
+
+    let label = e.target.labels[0];
+    label.innerText = label.innerText.split(":")[0];
+    label.innerText += ": " + damping.toFixed(2);
+}
+
+/*
+/   Mouse events
+*/
+
+let selectedNodes = [];
+
+const simulationArea = document.getElementById("simulation-area");
+
+function getMousePos(e) {
+    var rect = simulationArea.getBoundingClientRect();
+    return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+    };
+}
+
+simulationArea.addEventListener("mousedown", (e) => 
+{
+    for (let i = 0; i < rows; i++) 
+    {
+        for (let j = 0; j < cols; j++) 
+        {
+            let mouse = getMousePos(e);
+
+            let diffx = Math.abs(mouse.x - positions[i][j][0]);
+            let diffy = Math.abs(mouse.y - positions[i][j][1]);
+
+            let distance = Math.sqrt(diffx * diffx + diffy * diffy)
+
+            let factor = -1 * distance / 300 + 1;
+
+            if (Math.sqrt(diffx * diffx + diffy * diffy) < nodeRadius + cursorRadius) {
+                selectedNodes.push({
+                    row: i,
+                    col: j,
+                    factor: factor * factor
+                });
+            }
+        }
+    }
+});
+
+document.addEventListener("mousemove", (e) => 
+{
+    let mouse = getMousePos(e);
+    drawCursor("#cursor", [mouse], "#FF0000");
+
+    if (selectedNodes.length < 1) {
+        return;
+    }
+
+    // Add the movement delta to the node position
+    for (let i = 0; i < selectedNodes.length; i++) 
+    {
+        positions[selectedNodes[i].row][selectedNodes[i].col][0] += e.movementX * selectedNodes[i].factor;
+        positions[selectedNodes[i].row][selectedNodes[i].col][1] += e.movementY * selectedNodes[i].factor;
+        lastPositions[selectedNodes[i].row][selectedNodes[i].col][0] += e.movementX * selectedNodes[i].factor;
+        lastPositions[selectedNodes[i].row][selectedNodes[i].col][1] += e.movementY * selectedNodes[i].factor;
+    }
+
+    if (!isRunning) {
+        render();
+    }
+});
+
+document.addEventListener("wheel", (e) => 
+{
+    cursorRadius += -0.1 * e.deltaY;
+
+    if (cursorRadius > 200) cursorRadius = 200;
+    if (cursorRadius < 20) cursorRadius = 20;
+
+    let mouse = getMousePos(e);
+    drawCursor("#cursor", [mouse], "#FF0000");
+});
+
+simulationArea.addEventListener("mouseleave", (e) => selectedNodes = []);
+simulationArea.addEventListener("mouseup", (e) => selectedNodes = []);
 
 // Entry point
 initializeGrid();
