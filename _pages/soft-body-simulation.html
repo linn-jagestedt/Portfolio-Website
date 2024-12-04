@@ -10,16 +10,16 @@ layout: layouts/layout.liquid
 
     <div class="sliders">
       <label for="rows">Rows:</label>
-      <input id="rows" type="number" value="4" min="1">
+      <input id="rows" type="number" value="30" min="1">
 
       <label for="cols">Cols:</label>
-      <input id="cols" type="number" value="5" min="1">
+      <input id="cols" type="number" value="30" min="1">
       
       <label for="restore-force">Restore Force: </label>
       <input id="restore-force" type="range" min="0" max="1" step="0.01" value="0.5">
       
       <label for="damping">Damping:</label>
-      <input id="damping" type="range" min="0" max="1" step="0.01" value="0.5">
+      <input id="damping" type="range" min="0.01" max="1" step="0.01" value="0.5">
       <p>Frametime: <span id="frame-time"></span>ms</p>
     </div>
   </div>
