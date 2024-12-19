@@ -38,7 +38,42 @@ thumbnail: textures/palm.jpg
 <script defer type="module" src="/js/ycbcr-compression/main.js"></script>
 <script defer type="module" src="/js/ycbcr-compression/settings.js"></script>
 
-<script id="rgb-to-ycbcr-vert" src="/shaders/rgb_to_ycbcr.vert" type="x-shader/x-vertex"></script>
-<script id="rgb-to-ycbcr-frag" src="/shaders/rgb_to_ycbcr.frag" type="x-shader/x-fragment"></script>
-<script id="ycbcr-combine-vert" src="/shaders/ycbcr_combine.vert" type="x-shader/x-vertex"></script>
-<script id="ycbcr-combine-frag" src="/shaders/ycbcr_combine.frag" type="x-shader/x-fragment"></script>
+<script id="rgb-to-ycbcr-vert" src="/shaders/ycbcr-compression/rgb_to_ycbcr.vert" type="x-shader/x-vertex"></script>
+<script id="rgb-to-ycbcr-frag" src="/shaders/ycbcr-compression/rgb_to_ycbcr.frag" type="x-shader/x-fragment"></script>
+<script id="ycbcr-combine-vert" src="/shaders/ycbcr-compression/ycbcr_combine.vert" type="x-shader/x-vertex"></script>
+<script id="ycbcr-combine-frag" src="/shaders/ycbcr-compression/ycbcr_combine.frag" type="x-shader/x-fragment"></script>
+
+<style>
+	main img {
+    width: 1024px;
+    height: auto;
+}
+
+main canvas {
+    width: 1024px;
+    height: auto;
+}
+
+@media (max-width: 2400px) {
+    main img {
+        width: 512px;
+    }
+    
+    main canvas {
+        width: 512px;
+        height: auto;
+    }
+}
+
+
+@media (max-width: 1300px) {
+    main img {
+        width: 256px;
+    }
+    
+    main canvas {
+        width: 256px;
+        height: auto;
+    }
+}
+</style>

@@ -6,9 +6,17 @@ export default async function createShader(vertexSrc, fragmentSrc)
 	GL.shaderSource(vertexShader, vertexSrc);
 	GL.compileShader(vertexShader);
 
+	if (!GL.getShaderParameter(vertexShader, GL.COMPILE_STATUS)) {
+		console.log(GL.getShaderInfoLog(vertexShader));
+	}	
+
 	let fragmentShader = GL.createShader(GL.FRAGMENT_SHADER);
 	GL.shaderSource(fragmentShader, fragmentSrc);
 	GL.compileShader(fragmentShader);
+
+	if (!GL.getShaderParameter(fragmentShader, GL.COMPILE_STATUS)) {
+		console.log(GL.getShaderInfoLog(fragmentShader));
+	}
 
 	let program = GL.createProgram();
 	GL.attachShader(program, vertexShader);

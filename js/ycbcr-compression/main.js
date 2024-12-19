@@ -24,7 +24,6 @@ const YCbCrTexture = createTextureFromImage(image);
 
 updateFileSize();
 
-
 const RGBToYCBCRVert = await (await fetch(document.querySelector("#rgb-to-ycbcr-vert").src)).text();
 const RGBToYCBCRFrag = await (await fetch(document.querySelector("#rgb-to-ycbcr-frag").src)).text();
 const YCbCrCombineVert = await (await fetch(document.querySelector("#ycbcr-combine-vert").src)).text();

@@ -1,7 +1,7 @@
-import { createMatrixRotation } from "../utils/matrix.js"
-import { GL } from "../utils/renderContext.js";
+import { createMatrixRotation } from "./matrix.js"
+import { GL } from "./renderContext.js";
 
-export default class Rect 
+export default class RectInstanced
 {
     constructor(shader) 
     {
@@ -10,50 +10,42 @@ export default class Rect
         this.modelViewLocation = GL.getUniformLocation(this.shader, "modelView");
     }
 
-    setPosition(position_x, position_y, position_z) 
-    {
-        this.position = { x : position_x, y : position_y, z : position_z };
-    }
-
-    setScale(scale_x, scale_y, scale_z) 
-    {
-        this.scale = { x : scale_x, y : scale_y, z : scale_z };
-    }
-
     free() 
     {
         GL.delteVertexArray(this.vertexArray);
     }
 
-    draw(matrix) 
+    draw(matrices, instances) 
     {
         GL.useProgram(this.shader);
 
-        if (matrix != undefined) 
+        if (matrices != undefined) 
         {
             GL.uniformMatrix4fv(
                 this.modelViewLocation, 
                 false, 
-                matrix
+                matrices, 
+                0
             );
         }
 
-        GL.drawElements(GL.TRIANGLES, 6, GL.UNSIGNED_SHORT, 0);
+        GL.drawElementsInstanced(GL.TRIANGLES, 6, GL.UNSIGNED_SHORT, 0, instances);
     }
 
-    setModelView(matrix) 
+    setModelView(matrices) 
     {
         GL.useProgram(this.shader);
 
         GL.uniformMatrix4fv(
             this.modelViewLocation, 
             false, 
-            matrix
+            matrices, 
+            0
         );
     }
 
     createVertexArray() 
-    {	
+    {
         const indecies = new Uint16Array([
             0, 1, 3,
             3, 2, 1,

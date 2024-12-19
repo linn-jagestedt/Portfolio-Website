@@ -13,6 +13,9 @@ function initRenderContext(width, height) {
     GL.viewport(0, 0, GL.drawingBufferWidth, GL.drawingBufferHeight);
     GL.clearColor(0.135, 0.135, 0.135, 1.0);
     GL.clear(GL.COLOR_BUFFER_BIT);
+
+    GL.enable(GL.BLEND)
+    GL.blendFunc(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA);
     
     return GL;
 }
