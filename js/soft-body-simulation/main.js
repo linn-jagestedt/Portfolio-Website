@@ -1,8 +1,8 @@
 import createShader from "../utils/shader.js"
-import { createMatrix2D, createMatrix2Drotation } from "../utils/matrix.js"
+import { create4x2Matrix, create4x2MatrixRotation, set4x2Matrix, set4x2MatrixRotation } from "../utils/matrix.js"
 import RectInstanced from "../utils/rectInstanced.js"
 import Rect from "../utils/rect.js"
-import { fastCos, fastSin } from "../utils/trigonometry.js";
+import { fastCos, fastSin, fastSqrt } from "../utils/trigonometry.js";
 
 const rowsInput = document.getElementById("rows");
 const colsInput = document.getElementById("cols");
@@ -10,19 +10,20 @@ const colsInput = document.getElementById("cols");
 const springForceInput = document.getElementById("springForce");
 const dampingInput = document.getElementById("damping");
 const maxSpringLengthInput = document.getElementById("maxSpringLength");
-const updatesPerFrameInput = document.getElementById("updatesPerFrame");
+const resistanceInput = document.getElementById("resistance");
 
 const toggleInput = document.getElementById("toggle-simulation");
+
+const springForceFactor = 4000;
+const dampingFactor = 40;
 
 let rows = parseInt(rowsInput.value);
 let cols = parseInt(colsInput.value);
 
-let springForce = 200 * parseFloat(springForceInput.value);
-let damping = 20 * parseFloat(dampingInput.value);
+let springForce = springForceFactor * parseFloat(springForceInput.value);
+let damping = dampingFactor * parseFloat(dampingInput.value);
 
 let maxSpringLength = parseFloat(maxSpringLengthInput.value);
-
-let updatesPerFrame = parseInt(updatesPerFrameInput.value);
 
 let isRunning = false;
 
@@ -39,12 +40,12 @@ colsInput.oninput = (e) => {
 };
 
 springForceInput.oninput = (e) => {
-    springForce = 200 * parseFloat(e.target.value);
+    springForce = springForceFactor * parseFloat(e.target.value);
     springForceInput.labels[0].innerText = "Spring Force: " + parseFloat(e.target.value).toFixed(2);
 }
 
 dampingInput.oninput = (e) => {
-    damping = 20 * parseFloat(e.target.value);
+    damping = dampingFactor * parseFloat(e.target.value);
     dampingInput.labels[0].innerText = "Damping: " + parseFloat(e.target.value).toFixed(2);
 }
 
@@ -54,28 +55,56 @@ maxSpringLengthInput.oninput = (e) => {
     maxSpringLengthInput.labels[0].innerText = "Max Spring Length: " + parseFloat(e.target.value).toFixed(2);
 }
 
-updatesPerFrameInput.oninput = (e) => {
-    updatesPerFrame = parseInt(e.target.value);
-    updatesPerFrameInput.labels[0].innerText = "Physics updates per frame: " + parseInt(e.target.value);
+resistanceInput.oninput = (e) => {
+    resistance = resistanceFactor * parseFloat(e.target.value);
+    resistanceInput.labels[0].innerText = "Resistance: " + parseFloat(e.target.value).toFixed(2);
 }
 
+let intervalID = 0;
+
 toggleInput.onclick = (e) => {
+    startTime = Date.now();
     isRunning = !isRunning;
     toggleInput.innerText = isRunning ? "Stop Simulation" : "Start Simulation";
-    physicsLoop();
+    if (isRunning) {
+        intervalID = setInterval(physicsLoop, 0 );
+    } else {
+        clearInterval(intervalID);
+    }
 };
 
 const mass = 1;
-const timeStep = 0.016;
+const timeStep = 0.004;
 
 let nodeRadius = 0;
 let lineWidth = 0;
 
 let step = 0;
 let maxLength = 0;
+let minLength = 0;
 
-let nodes = [];
-let lines = [];
+let nodeCount = 0;
+
+let nodePositionsX = [];
+let nodePositionsY = [];
+
+let nodeLastPositionsX = [];
+let nodeLastPositionsY = [];
+
+let nodeVelocitiesX = [];
+let nodeVelocitiesY = [];
+
+let nodeForcesX = [];
+let nodeForcesY = [];
+
+let nodeIsSelected = [];
+
+let nodeRows = [];
+let nodeCols = [];
+
+let nodeLinks = [];
+
+let nodeLinkCount = 0;
 
 const canvas = document.querySelector("#glcanvas");
 
@@ -90,265 +119,267 @@ document.onresize = (e) => {
 
 function initialize() 
 {
-    nodes = [];
-    lines = new Array((rows - 1) * cols + (cols - 1) * rows);
-
-    for (let i = 0; i < lines.length; i++) 
-    {        
-        lines[i] = {
-            position: [0, 0],
-            scale: [0, 0],
-            angle: 0
-        };
-    }
-
     step = (2 - 0.5) / ((cols > rows ? cols : rows) - 1);
     maxLength = maxSpringLength * step;
+    minLength = 1.0 * step;
 
     nodeRadius = 0.7 / (rows + cols);
     lineWidth = 0.15 / (rows + cols);
 
-    for (let i = 0; i < rows; i++) 
-    {
-        for (let j = 0; j < cols; j++) 
-        {
-            nodes.push({
-                position: [
-                    (-1 + 0.25 + (cols < rows ? (rows - cols) * step * 0.5 : 0)) + step * j, 
-                    (-1 + 0.25 + (rows < cols ? (cols - rows) * step * 0.5 : 0)) + step * i
-                ],
-                lastPosition: [
-                    (-1 + 0.25 + (cols < rows ? (rows - cols) * step * 0.5 : 0)) + step * j, 
-                    (-1 + 0.25 + (rows < cols ? (cols - rows) * step * 0.5 : 0)) + step * i
-                ],
-                delta: [0, 0],                
-                velocity: [0, 0],
-                force: [0, 0],
-                row: i,
-                col: j,
-                links: [],
-                linksRender: []
-            });
-        }
-    } 
+    lineVAO.useProgram();
+
+    GL.uniform1f(
+        lineWidthLocation,
+        lineWidth
+    );
+
+    const marginX = 0.25 + (cols < rows ? (rows - cols) * step * 0.5 : 0);
+    const marginY = 0.25 + (rows < cols ? (cols - rows) * step * 0.5 : 0);
+
+    nodeCount = rows * cols;
+
+    nodePositionsX = new Float32Array(nodeCount);
+    nodePositionsY = new Float32Array(nodeCount);
+
+    nodeLastPositionsX = new Float32Array(nodeCount);
+    nodeLastPositionsY = new Float32Array(nodeCount);
+
+    nodeVelocitiesX = new Float32Array(nodeCount);
+    nodeVelocitiesY = new Float32Array(nodeCount);
+    
+    nodeForcesX = new Float32Array(nodeCount);
+    nodeForcesY = new Float32Array(nodeCount);
+
+    nodeRows = new Float32Array(nodeCount);
+    nodeCols = new Float32Array(nodeCount);
+
+    nodeIsSelected = new Array(nodeCount);
+
+    nodeLinkCount = (rows - 1) * cols + (cols - 1) * rows;
+    
+    nodeLinks = new Array(nodeLinkCount);
+
+    let nodeLinkIndex = 0;
 
     for (let i = 0; i < rows; i++) 
     {
         for (let j = 0; j < cols; j++) 
         {
-            const links = [];
-            const linksRender = [];
+            const index = i * cols + j;
 
-            if (j < cols - 1) {
-                links.push(nodes[(i * cols) + j + 1]);
-                linksRender.push(nodes[(i * cols) + j + 1]);
+            nodePositionsX[index] = -1 + marginX + step * j;
+            nodePositionsY[index] = -(-1 + marginY + step * i);
+
+            nodeLastPositionsX[index] = -1 + marginX + step * j;
+            nodeLastPositionsY[index] = -(-1 + marginY+ step * i);
+
+            nodeVelocitiesX[index] = 0;
+            nodeVelocitiesY[index] = 0;
+
+            nodeForcesX[index] = 0;
+            nodeForcesY[index] = 0;
+
+            nodeRows[index] = i; 
+            nodeCols[index] = j
+
+            nodeIsSelected[index] = false;
+                        
+            if (j < cols - 1) {          
+                nodeLinks[nodeLinkIndex] = [index, index + 1];
+                nodeLinkIndex++;
             }
 
-            if (i < rows - 1) {
-                links.push(nodes[((i + 1) * cols) + j]);
-                linksRender.push(nodes[((i + 1) * cols) + j]);
+            if (i < rows - 1) {            
+                nodeLinks[nodeLinkIndex] = [index, index + cols];
+                nodeLinkIndex++;
             }
-
-            if (j > 0) {
-                links.push(nodes[(i * cols) + j - 1]);
-            }
-
-            if (i > 0) {
-                links.push(nodes[((i - 1) * cols) + j]);
-            }
-
-            nodes[(i * cols) + j].links = links;
-            nodes[(i * cols) + j].linksRender = linksRender;
         }
     }
 }
+
+const frametimeText = document.getElementById("frametime");
+
+const frametimeList = [];
+let frameTimeIndex = 0;
+
+let startTime = 0;
 
 function physicsLoop() 
 {
     if (!isRunning) return;
 
-    for (let i = 0; i < updatesPerFrame; i++) {   
-        physicsUpdate();    
-    }
+    updateForces();    
+    updatePositions();    
+    limitSpringLength();
 
-    requestAnimationFrame(physicsLoop);
+    if (frametimeList.length > 100) {   
+        frametimeList.shift();
+    } 
+
+    frametimeList.push(Date.now() - startTime);
+    startTime = Date.now();
 }
 
 function renderLoop() 
 {
-    updateLineData();
     drawLines();
     drawCircles();
     drawCursor();
+
+    frametimeText.innerText = (frametimeList.reduce((partialSum, a) => partialSum + a, 0) / frametimeList.length).toFixed(1);
 
     requestAnimationFrame(renderLoop);
 }
 
 function mouseLoop() 
 {
-    if (mouseDelta[0] != 0 || mouseDelta[1] != 0) 
-    {
-        const selectedNodesLength = selectedNodes.length;
-        const nodesLength = nodes.length;
- 
-        for (let i = 0; i < selectedNodesLength; i++) 
+    if (mouseDeltaX != 0 || mouseDeltaY != 0) 
+    { 
+        for (let i = 0; i < nodeCount; i++) 
         {
-            const node = selectedNodes[i];
+            if (!nodeIsSelected[i]) {
+                continue;
+            }
 
-            node.position[0] += mouseDelta[0];
-            node.position[1] += mouseDelta[1];
-            node.lastPosition[0] += mouseDelta[0];
-            node.lastPosition[1] += mouseDelta[1];
-        }
-
-        for (let i = 0; i < nodesLength; i++) 
-        {
-            limitSpringLength(nodes[i]);
-        }
-    
-        for (let i = nodesLength - 1; i > 0; i--) 
-        {
-            limitSpringLength(nodes[i]);
+            nodePositionsX[i] += mouseDeltaX;
+            nodePositionsY[i] += mouseDeltaY;
+            nodeLastPositionsX[i] += mouseDeltaX;
+            nodeLastPositionsY[i] += mouseDeltaY;
         }
         
-        mouseDelta[0] = 0;
-        mouseDelta[1] = 0;
+        mouseDeltaX = 0;
+        mouseDeltaY = 0;
+
+    }
+
+    if (!isRunning) {
+        limitSpringLength();
     }
 
     requestAnimationFrame(mouseLoop);
-}
-
-const frametimeText = document.getElementById("frametime");
-
-const frametimeList = new Array(20);
-let frameTimeIndex = 0;
-
-let startTime = Date.now();
-
-function frameTimeLoop() 
-{
-    if (frameTimeIndex < frametimeList.length) 
-    {   
-        frametimeList[frameTimeIndex] = (Date.now() - startTime);
-        startTime = Date.now();
-    } 
-    else 
-    {
-        frametimeText.innerText = (frametimeList.reduce((partialSum, a) => partialSum + a, 0) / frametimeList.length).toFixed(1);
-        frameTimeIndex = 0;
-        frametimeList.fill(0);
-    }
-
-    frameTimeIndex++;
-    
-    requestAnimationFrame(frameTimeLoop);
 }
 
 /*
  * Physics 
  */
 
-const currentPos = [0, 0];
+// Smaller timesteps produce more stable results
+const MassInverse = 1.0 / mass;
+const timeStepSquaredTimesMassInverse = timeStep * timeStep * (1.0 / mass);
+const twoTimestimeStepInverse = (1 / (2 * timeStep));
 
-function physicsUpdate() 
+function updatePositions() 
 {
-    const nodesLength = nodes.length;
-
-    for (let i = 0; i < nodesLength; i++) 
+    for (let i = 0; i < nodeCount; i++) 
     {
-        const node = nodes[i];
-
-        if (!selectedNodes.includes(node)) 
-        {
-            currentPos[0] = node.position[0];
-            currentPos[1] = node.position[1];
-
-            node.delta[0] = node.position[0] - node.lastPosition[0];
-            node.delta[1] = node.position[1] - node.lastPosition[1];
-
-            //updateVelocityEuler(node);
-            //updatePositionEuler(node);
-
-            updateVelocityVerlet(node);
-            updatePositionVerlet(node);
-
-            updateForces(node);
-    
-            node.lastPosition[0] = currentPos[0];
-            node.lastPosition[1] = currentPos[1];
+        if (nodeIsSelected[i]) {
+            continue;
         }
+
+        const currentPosX = nodePositionsX[i];
+        const currentPosY = nodePositionsY[i];
+
+        // Update positions & velocity Verlet
+
+        const deltaX = nodePositionsX[i] - nodeLastPositionsX[i];
+        const deltaY = nodePositionsY[i] - nodeLastPositionsY[i];
+    
+        nodePositionsX[i] += (deltaX + nodeForcesX[i] * timeStepSquaredTimesMassInverse);
+        nodePositionsY[i] += (deltaY + nodeForcesY[i] * timeStepSquaredTimesMassInverse);
+    
+        nodeVelocitiesX[i] = (twoTimestimeStepInverse * deltaX);
+        nodeVelocitiesY[i] = (twoTimestimeStepInverse * deltaY);
+
+        /* Update positions & veolocity Euler 
+
+        nodePositionsX[i] += timeStep * nodeVelocitiesX[i] * selected;
+        nodePositionsY[i] += timeStep * nodeVelocitiesY[i] * selected;
+
+        nodeVelocitiesX[i] += timeStep * (nodeForces[i][0] * MassInverse) * selected;
+        nodeVelocitiesY[i] += timeStep * (nodeForces[i][1] * MassInverse) * selected; */
+
+        // Update last position
+
+        nodeLastPositionsX[i] = currentPosX;
+        nodeLastPositionsY[i] = currentPosY;
     }
 }
 
-// Smaller timesteps produce more stable results
-const timeStepMultiplier = 0.5;
-
-const actualTimeStep = timeStepMultiplier * timeStep;
-
-function updatePositionEuler(node) 
-{ 
-    node.position[0] += actualTimeStep * node.velocity[0];
-    node.position[1] += actualTimeStep * node.velocity[1];
-}
-
-const MassInverse = 1.0 / mass;
-
-function updateVelocityEuler(node) 
+function updateForces() 
 {
-    node.velocity[0] += actualTimeStep * (node.force[0] * MassInverse);
-    node.velocity[1] += actualTimeStep * (node.force[1] * MassInverse);
-}
-
-const timeStepSquaredTimesMassInverse = actualTimeStep * actualTimeStep * (1.0 / mass);
-
-function updatePositionVerlet(node) 
-{         
-    node.position[0] += node.delta[0] + node.force[0] * timeStepSquaredTimesMassInverse,
-    node.position[1] += node.delta[1] + node.force[1] * timeStepSquaredTimesMassInverse
-}
-
-const twoTimestimeStepInverse = (1 / (2 * actualTimeStep));
-
-function updateVelocityVerlet(node) 
-{         
-    node.velocity[0] = twoTimestimeStepInverse * node.delta[0];
-    node.velocity[1] = twoTimestimeStepInverse * node.delta[1];
-}
-
-const diff = [0, 0];
-const sum = [0, 0];
-const len = [0, 0];
-
-function updateForces(sourceNode) 
-{
-    sum[0] = 0;
-    sum[1] = 0;
-
-    const nodeLinksLength = sourceNode.links.length;
-
-    for (let i = 0; i < nodeLinksLength; i++) 
+    // Reset forces
+    nodeForcesX.fill(0);
+    nodeForcesY.fill(0);
+ 
+    for (let i = 0; i < nodeLinkCount; i++) 
     {
-        const targetNode = sourceNode.links[i];
+        const [sourceIndex, targetIndex] = nodeLinks[i];
 
-        len[0] = step * Math.abs(targetNode.col - sourceNode.col);
-        len[1] = step * Math.abs(targetNode.row - sourceNode.row);
+        const lenX = step * Math.abs(nodeCols[targetIndex] - nodeCols[sourceIndex]);
+        const lenY = step * Math.abs(nodeRows[targetIndex] - nodeRows[sourceIndex]);
 
         // Calculate spring force
 
-        diff[0] = sourceNode.position[0] - targetNode.position[0];
-        diff[1] = sourceNode.position[1] - targetNode.position[1];
-    
-        sum[0] += -springForce * (Math.abs(diff[0]) - len[0]) * Math.sign(diff[0]);
-        sum[1] += -springForce * (Math.abs(diff[1]) - len[1]) * Math.sign(diff[1]);
+        const diffX = nodePositionsX[sourceIndex] - nodePositionsX[targetIndex];
+        const diffY = nodePositionsY[sourceIndex] - nodePositionsY[targetIndex];
+
+        const springForceX = -springForce * (Math.abs(diffX) - lenX) * Math.sign(diffX);
+        const springForceY = -springForce * (Math.abs(diffY) - lenY) * Math.sign(diffY);
 
         // Calculate damping force
 
-        sum[0] += -damping * (sourceNode.velocity[0] - targetNode.velocity[0]);
-        sum[1] += -damping * (sourceNode.velocity[1] - targetNode.velocity[1]);
-    }  
+        const dampingForceX = -damping * (nodeVelocitiesX[sourceIndex] - nodeVelocitiesX[targetIndex]);
+        const dampingForceY = -damping * (nodeVelocitiesY[sourceIndex] - nodeVelocitiesY[targetIndex]);
 
-    sourceNode.force[0] = sum[0];
-    sourceNode.force[1] = sum[1];
+        // Add forces
+
+        const TotalForceX = springForceX + dampingForceX;
+        const TotalForceY = springForceY + dampingForceY;
+
+        nodeForcesX[sourceIndex] += TotalForceX;
+        nodeForcesY[sourceIndex] += TotalForceY;
+
+        nodeForcesX[targetIndex] -= TotalForceX;
+        nodeForcesY[targetIndex] -= TotalForceY;
+    }   
+
+    for (let i = 0; i < nodeCount; i++) 
+    {
+        nodeForcesX[i] -= nodeVelocitiesX[i] * damping;
+        nodeForcesY[i] -= nodeVelocitiesY[i] * damping;
+    }
+}
+
+function limitSpringLength() 
+{
+    for (let i = 0; i < nodeLinkCount; i++) 
+    {
+        const sourceIndex = nodeLinks[i][0];
+        const targetIndex = nodeLinks[i][1];
+
+        const diffX = nodePositionsX[targetIndex] - nodePositionsX[sourceIndex];
+        const diffY = nodePositionsY[targetIndex] - nodePositionsY[sourceIndex];
+    
+        const distance = fastSqrt(diffX * diffX + diffY * diffY);
+    
+        if (distance < maxLength) {
+            continue;
+        }
+
+        const length = distance - maxLength;     
+
+        nodePositionsX[sourceIndex] += length * diffX;
+        nodePositionsY[sourceIndex] += length * diffY; 
+
+        nodeLastPositionsX[sourceIndex] += length * diffX;
+        nodeLastPositionsY[sourceIndex] += length * diffY;
+
+        nodePositionsX[targetIndex] -= length * diffX;
+        nodePositionsY[targetIndex] -= length * diffY; 
+
+        nodeLastPositionsX[targetIndex] -= length * diffX;
+        nodeLastPositionsY[targetIndex] -= length * diffY;
+    }
 }
 
 /*
@@ -383,103 +414,108 @@ const circleVAO = new RectInstanced(circleShader);
 const lineVAO = new RectInstanced(lineShader);
 const cursorVAO = new Rect(cursorShader);
 
+lineVAO.useProgram();
+
+const lineWidthLocation = GL.getUniformLocation(lineVAO.shader, "lineWidth");
+const sourcePosLocation = GL.getUniformLocation(lineVAO.shader, "sourcePositions");
+const targetPosLocation = GL.getUniformLocation(lineVAO.shader, "targetPositions");
+
 const INSTANCES_PER_DRAWCALL = 200;
 
-const matrixArray = new Float32Array(INSTANCES_PER_DRAWCALL * 16);
+const matrices = new Float32Array(INSTANCES_PER_DRAWCALL * 8);
 
 function drawCircles() 
 {
-    const nodesLength = nodes.length;
-    const drawcalls = Math.ceil(nodesLength / INSTANCES_PER_DRAWCALL);
+    const drawcalls = Math.ceil(nodeCount / INSTANCES_PER_DRAWCALL);
 
-    const scale = [nodeRadius, nodeRadius];
+    circleVAO.useProgram();
 
     for (let drawcall = 0; drawcall < drawcalls; drawcall++) 
     {
-        matrixArray.fill(0);
+        if(drawcall == drawcalls - 1) { 
+            matrices.fill(0); 
+        }
 
         const offset = drawcall * INSTANCES_PER_DRAWCALL;
 
-        for (let index = 0; index < INSTANCES_PER_DRAWCALL && offset + index < nodesLength; index++) 
+        for (let i = 0; i < INSTANCES_PER_DRAWCALL && offset + i < nodeCount; i++) 
         {
-            const node = nodes[offset + index];
+            const index = offset + i;
 
-            const matrix = createMatrix2D(
-                node.position,
-                scale                
+            set4x2Matrix(
+                matrices,
+                i * 8,
+                nodePositionsX[index],
+                nodePositionsY[index], 
+                nodeRadius,
+                nodeRadius
             );
-
-            matrixArray.set(matrix, index * 16);
         }
 
-        circleVAO.draw(matrixArray, INSTANCES_PER_DRAWCALL);
+        circleVAO.set4x2ModelView(matrices)
+        circleVAO.draw(INSTANCES_PER_DRAWCALL);
     }
 }
 
+const sourcePositions = new Float32Array(INSTANCES_PER_DRAWCALL * 2);
+const targetPositions = new Float32Array(INSTANCES_PER_DRAWCALL * 2);
+
 function drawLines() 
 {
-    const linesLength = lines.length;
-    const drawcalls = Math.ceil(linesLength / INSTANCES_PER_DRAWCALL)
+    const drawcalls = Math.ceil(nodeLinkCount / INSTANCES_PER_DRAWCALL)
+
+    lineVAO.useProgram();
 
     for (let drawcall = 0; drawcall < drawcalls; drawcall++) 
     {
-        matrixArray.fill(0);
+        if(drawcall == drawcalls - 1) { 
+            sourcePositions.fill(0); 
+            targetPositions.fill(0); 
+        }
 
         const offset = drawcall * INSTANCES_PER_DRAWCALL;
 
-        for (let index = 0; index < INSTANCES_PER_DRAWCALL && offset + index < linesLength; index++) 
+        for (let i = 0; i < INSTANCES_PER_DRAWCALL && offset + i < nodeLinkCount; i++) 
         {
-            const line = lines[offset + index];
+            const index = offset + i;
 
-            const matrix = createMatrix2Drotation(
-                line.position,
-                line.scale,
-                line.angle
-            );
+            const [sourceIndex, targetIndex] = nodeLinks[index];
 
-            matrixArray.set(matrix, index * 16);
+            sourcePositions[i * 2 + 0] = nodePositionsX[sourceIndex];
+            sourcePositions[i * 2 + 1] = nodePositionsY[sourceIndex];
+            
+            targetPositions[i * 2 + 0] = nodePositionsX[targetIndex];
+            targetPositions[i * 2 + 1] = nodePositionsY[targetIndex];
         }
 
-        lineVAO.draw(matrixArray, INSTANCES_PER_DRAWCALL);
+        GL.uniform2fv(
+            sourcePosLocation,
+            sourcePositions
+        );
+
+        GL.uniform2fv(
+            targetPosLocation,
+            targetPositions
+        );
+
+        lineVAO.draw(INSTANCES_PER_DRAWCALL);
     }
 }
 
 function drawCursor() 
 {
+    cursorVAO.useProgram();
+
+    cursorVAO.set4x2ModelView(
+        create4x2Matrix(
+            mousePosX,
+            mousePosY,
+            cursorRadius,
+            cursorRadius
+        )
+    );
+
     cursorVAO.draw();
-}
-
-function updateLineData() 
-{    
-    let index = 0;
-
-    const nodesLength = nodes.length;
-
-    for (let i = 0; i < nodesLength; i++) 
-    {
-        const sourceNode = nodes[i];
-        const linksRenderLength = sourceNode.linksRender.length;
-
-        for (let j = 0; j < linksRenderLength; j++, index++) 
-        {
-            const targetNode = sourceNode.linksRender[j];
-
-            diff[0] = targetNode.position[0] - sourceNode.position[0];
-            diff[1] = targetNode.position[1] - sourceNode.position[1];
-        
-            const line = lines[index];
-            
-            line.position[0] = sourceNode.position[0] + 0.5 * diff[0];
-            line.position[1] = sourceNode.position[1] + 0.5 * diff[1];
-
-            const length = Math.sqrt(diff[0] * diff[0] + diff[1] * diff[1]);
-
-            line.scale[0] = length * 0.5;
-            line.scale[1] = lineWidth * Math.min(Math.max(step / length, 0), 1);
-
-            line.angle = -Math.atan(diff[1] / diff[0]);
-        }
-    }
 }
 
 /*
@@ -487,7 +523,6 @@ function updateLineData()
  */
 
 let cursorRadius = 0.1;
-let selectedNodes = [];
 
 function getMousePos(e) {
     var rect = canvas.getBoundingClientRect();
@@ -504,107 +539,62 @@ function getMouseDelta(e) {
     ];
 }
 
-const mouseDiff = [0, 0];
-
 canvas.addEventListener("mousedown", (e) => 
 {
     const mouse = getMousePos(e);
 
-    const nodesLength = nodes.length;
+    mouseDeltaX = 0;
+    mouseDeltaY = 0;
 
-    for (let i = 0; i < nodesLength; i++) 
+    for (let i = 0; i < nodeCount; i++) 
     {
-        const node = nodes[i];
+        const mouseDiffX = mouse[0] - nodePositionsX[i];
+        const mouseDiffY = mouse[1] - nodePositionsY[i];
 
-        mouseDiff[0] = mouse[0] - node.position[0];
-        mouseDiff[1] = mouse[1] - node.position[1];
-
-        const distance = Math.sqrt(mouseDiff[0] * mouseDiff[0] + mouseDiff[1] * mouseDiff[1])
+        const distance = fastSqrt(mouseDiffX * mouseDiffX + mouseDiffY * mouseDiffY)
 
         if (distance < nodeRadius + cursorRadius) {
-            selectedNodes.push(node);
+            nodeIsSelected[i] = true;
         }
     } 
 });
 
-const mouseDelta = [0, 0];
-const cursorScale = [cursorRadius, cursorRadius];
+let mouseDeltaX = 0;
+let mouseDeltaY = 0;
+
+let mousePosX = 0;
+let mousePosY = 0;
 
 document.addEventListener("mousemove", (e) => 
 {
     const mouse = getMousePos(e);
 
-    cursorVAO.setModelView(
-        createMatrix2D(
-            mouse,
-            cursorScale
-        )
-    );
+    mousePosX = mouse[0];
+    mousePosY = mouse[1];
 
-    if (selectedNodes.length > 0) 
+    if (nodeIsSelected.includes(true)) 
     {
         const delta = getMouseDelta(e);
 
-        mouseDelta[0] += delta[0];
-        mouseDelta[1] += delta[1];
+        mouseDeltaX += delta[0];
+        mouseDeltaY += delta[1];
     } 
-    else
-    {
-        mouseDelta[0] = 0;
-        mouseDelta[1] = 0;
-    }
 });
 
 document.addEventListener("wheel", (e) => 
 {
     cursorRadius += -0.001 * e.deltaY;
 
-    if (cursorRadius > 0.5) cursorRadius = 0.5;
-    if (cursorRadius < 0.01) cursorRadius = 0.01;
-
-    cursorScale[0] = cursorRadius;
-    cursorScale[1] = cursorRadius;
-
-    const mouse = getMousePos(e);
-
-    cursorVAO.setModelView(
-        createMatrix2D(
-            mouse,
-            cursorScale
-        )
-    );
+    cursorRadius = 
+        cursorRadius > 0.5 ? 0.5 : 
+        cursorRadius < 0.01 ? 0.01 : 
+        cursorRadius
+    ;
 });
 
-canvas.addEventListener("mouseleave", (e) => selectedNodes = []);
-canvas.addEventListener("mouseup", (e) => selectedNodes = []);
-
-function limitSpringLength(node) 
-{
-    const nodeLinksLength = node.links.length;
-
-    for (let i = 0; i < nodeLinksLength; i++) 
-    {
-        const targetNode = node.links[i];
-
-        diff[0] = targetNode.position[0] - node.position[0];
-        diff[1] = targetNode.position[1] - node.position[1];
-    
-        const distance = Math.sqrt(diff[0] * diff[0] + diff[1] * diff[1]);
-    
-        if (distance > maxLength && !selectedNodes.includes(targetNode))   
-        {
-            const angle = Math.atan2(diff[1], diff[0]);   
-            const length = distance - maxLength;
-
-            targetNode.position[0] -= fastCos(angle) * length;
-            targetNode.position[1] -= fastSin(angle) * length; 
-            targetNode.lastPosition[0] -= fastCos(angle) * length;
-            targetNode.lastPosition[1] -= fastSin(angle) * length;
-        }
-    }
-}
+canvas.addEventListener("mouseleave", (e) => nodeIsSelected.fill(false));
+canvas.addEventListener("mouseup", (e) => nodeIsSelected.fill(false));
 
 initialize();
 renderLoop();
 mouseLoop();
-frameTimeLoop();

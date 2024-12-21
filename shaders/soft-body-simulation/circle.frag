@@ -17,6 +17,7 @@ void main()
     vec3 color2 = vec3(0.25, 0.64, 0.95);
 
     vec3 color = mix(color1, color2, distance);
+    color += distance * 0.25;
 
     FragColor = vec4(color * distanceCenter, distanceCenter);
 }

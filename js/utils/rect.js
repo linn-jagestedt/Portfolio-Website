@@ -1,4 +1,4 @@
-import { createMatrixRotation } from "../utils/matrix.js"
+import { createMatrix4x4Rotation } from "../utils/matrix.js"
 import { GL } from "../utils/renderContext.js";
 
 export default class Rect 
@@ -25,30 +25,32 @@ export default class Rect
         GL.delteVertexArray(this.vertexArray);
     }
 
-    draw(matrix) 
-    {
+    useProgram() {
         GL.useProgram(this.shader);
+    }
 
-        if (matrix != undefined) 
-        {
-            GL.uniformMatrix4fv(
-                this.modelViewLocation, 
-                false, 
-                matrix
-            );
-        }
-
+    draw() 
+    {
         GL.drawElements(GL.TRIANGLES, 6, GL.UNSIGNED_SHORT, 0);
     }
 
-    setModelView(matrix) 
+    set4x4ModelView(matrix) 
     {
-        GL.useProgram(this.shader);
-
-        GL.uniformMatrix4fv(
+        GL.uniformMatrix4x4fv(
             this.modelViewLocation, 
             false, 
-            matrix
+            matrix, 
+            0
+        );
+    }
+
+    set4x2ModelView(matrix) 
+    {
+        GL.uniformMatrix4x2fv(
+            this.modelViewLocation, 
+            false, 
+            matrix, 
+            0
         );
     }
 

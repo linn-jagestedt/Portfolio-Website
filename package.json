@@ -1,5 +1,8 @@
 {
-  "devDependencies": {
-    "@11ty/eleventy": "^2.0.1"
+  "type": "module",
+  "dependencies": {
+    "@11ty/eleventy": "^3.0.0",
+    "react-dom": "^19.0.0",
+    "tsx": "^4.19.2"
   }
 }
