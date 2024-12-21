@@ -2,7 +2,7 @@ import createShader from "../utils/shader.js"
 import { create4x2Matrix, create4x2MatrixRotation, set4x2Matrix, set4x2MatrixRotation } from "../utils/matrix.js"
 import RectInstanced from "../utils/rectInstanced.js"
 import Rect from "../utils/rect.js"
-import { fastCos, fastSin, fastSqrt } from "../utils/trigonometry.js";
+import { fastSqrt } from "../utils/trigonometry.js";
 
 const rowsInput = document.getElementById("rows");
 const colsInput = document.getElementById("cols");
@@ -10,11 +10,10 @@ const colsInput = document.getElementById("cols");
 const springForceInput = document.getElementById("springForce");
 const dampingInput = document.getElementById("damping");
 const maxSpringLengthInput = document.getElementById("maxSpringLength");
-const resistanceInput = document.getElementById("resistance");
 
 const toggleInput = document.getElementById("toggle-simulation");
 
-const springForceFactor = 4000;
+const springForceFactor = 2000;
 const dampingFactor = 40;
 
 let rows = parseInt(rowsInput.value);
@@ -22,7 +21,6 @@ let cols = parseInt(colsInput.value);
 
 let springForce = springForceFactor * parseFloat(springForceInput.value);
 let damping = dampingFactor * parseFloat(dampingInput.value);
-
 let maxSpringLength = parseFloat(maxSpringLengthInput.value);
 
 let isRunning = false;
@@ -53,11 +51,6 @@ maxSpringLengthInput.oninput = (e) => {
     maxSpringLength = parseFloat(e.target.value);
     maxLength = maxSpringLength * step;
     maxSpringLengthInput.labels[0].innerText = "Max Spring Length: " + parseFloat(e.target.value).toFixed(2);
-}
-
-resistanceInput.oninput = (e) => {
-    resistance = resistanceFactor * parseFloat(e.target.value);
-    resistanceInput.labels[0].innerText = "Resistance: " + parseFloat(e.target.value).toFixed(2);
 }
 
 let intervalID = 0;
@@ -200,7 +193,6 @@ function initialize()
 const frametimeText = document.getElementById("frametime");
 
 const frametimeList = [];
-let frameTimeIndex = 0;
 
 let startTime = 0;
 

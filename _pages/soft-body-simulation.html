@@ -24,10 +24,6 @@ layout: layouts/layout.liquid
       
       <label for="maxSpringLength">Max Spring Length:</label>
       <input id="maxSpringLength" type="range" min="1" max="10" step="0.1" value="2">
-
-      <label for="resistance">Resistance: </label>
-      <input id="resistance" type="range" min="0" max="1" step="0.01" value="0.5">
-    
     </div>
 
     <p>Frametime: <span id="frametime"></span> ms</p>
@@ -43,7 +39,6 @@ layout: layouts/layout.liquid
   const springForceInput = document.getElementById("springForce");
   const dampingInput = document.getElementById("damping");
   const maxSpringLengthInput = document.getElementById("maxSpringLength");    
-  const resistanceInput = document.getElementById("resistance");    
   const frametime = document.getElementById("frametime");
 
 
@@ -52,7 +47,6 @@ layout: layouts/layout.liquid
   springForceInput.labels[0].innerText = "Spring Force: " + parseFloat(springForceInput.value).toFixed(2);
   dampingInput.labels[0].innerText = "Damping: " + parseFloat(dampingInput.value).toFixed(2);
   maxSpringLengthInput.labels[0].innerText = "Max Spring Length: " + parseFloat(maxSpringLengthInput.value).toFixed(2);
-  resistanceInput.labels[0].innerText = "Resistance: " + parseFloat(resistanceInput.value).toFixed(2);
   frametime.innerText = "0";
 
 </script>
