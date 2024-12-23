@@ -1,11 +1,13 @@
 import createShader from "../utils/shader.js"
-import { create4x2Matrix, create4x2MatrixRotation, set4x2Matrix, set4x2MatrixRotation } from "../utils/matrix.js"
-import RectInstanced from "../utils/rectInstanced.js"
+import { create4x2Matrix, set4x2Matrix } from "../utils/matrix.js"
 import Rect from "../utils/rect.js"
 import { fastSqrt } from "../utils/trigonometry.js";
 
 const rowsInput = document.getElementById("rows");
 const colsInput = document.getElementById("cols");
+
+rowsInput.labels[0].innerText = "Rows: " + parseInt(rowsInput.value);
+colsInput.labels[0].innerText = "Cols: " + parseInt(colsInput.value);
 
 const springForceInput = document.getElementById("springForce");
 const dampingInput = document.getElementById("damping");
@@ -16,6 +18,11 @@ const toggleInput = document.getElementById("toggle-simulation");
 const springForceFactor = 2000;
 const dampingFactor = 40;
 
+const mass = 1;
+const timeStep = 0.004;
+
+let isRunning = false;
+
 let rows = parseInt(rowsInput.value);
 let cols = parseInt(colsInput.value);
 
@@ -23,58 +30,13 @@ let springForce = springForceFactor * parseFloat(springForceInput.value);
 let damping = dampingFactor * parseFloat(dampingInput.value);
 let maxSpringLength = parseFloat(maxSpringLengthInput.value);
 
-let isRunning = false;
-
-rowsInput.oninput = (e) => { 
-    rows = parseInt(e.target.value); 
-    rowsInput.labels[0].innerText = "Rows: " + parseInt(e.target.value);
-    initialize(); 
-};
-
-colsInput.oninput = (e) => { 
-    cols = parseInt(e.target.value); 
-    colsInput.labels[0].innerText = "Cols: " + parseInt(e.target.value);
-    initialize(); 
-};
-
-springForceInput.oninput = (e) => {
-    springForce = springForceFactor * parseFloat(e.target.value);
-    springForceInput.labels[0].innerText = "Spring Force: " + parseFloat(e.target.value).toFixed(2);
-}
-
-dampingInput.oninput = (e) => {
-    damping = dampingFactor * parseFloat(e.target.value);
-    dampingInput.labels[0].innerText = "Damping: " + parseFloat(e.target.value).toFixed(2);
-}
-
-maxSpringLengthInput.oninput = (e) => {
-    maxSpringLength = parseFloat(e.target.value);
-    maxLength = maxSpringLength * step;
-    maxSpringLengthInput.labels[0].innerText = "Max Spring Length: " + parseFloat(e.target.value).toFixed(2);
-}
-
 let intervalID = 0;
-
-toggleInput.onclick = (e) => {
-    startTime = Date.now();
-    isRunning = !isRunning;
-    toggleInput.innerText = isRunning ? "Stop Simulation" : "Start Simulation";
-    if (isRunning) {
-        intervalID = setInterval(physicsLoop, 0 );
-    } else {
-        clearInterval(intervalID);
-    }
-};
-
-const mass = 1;
-const timeStep = 0.004;
 
 let nodeRadius = 0;
 let lineWidth = 0;
 
 let step = 0;
 let maxLength = 0;
-let minLength = 0;
 
 let nodeCount = 0;
 
@@ -91,6 +53,9 @@ let nodeForcesX = [];
 let nodeForcesY = [];
 
 let nodeIsSelected = [];
+
+let mouseRelativePosX = [];
+let mouseRelativePosY = [];
 
 let nodeRows = [];
 let nodeCols = [];
@@ -114,15 +79,14 @@ function initialize()
 {
     step = (2 - 0.5) / ((cols > rows ? cols : rows) - 1);
     maxLength = maxSpringLength * step;
-    minLength = 1.0 * step;
 
     nodeRadius = 0.7 / (rows + cols);
     lineWidth = 0.15 / (rows + cols);
 
-    lineVAO.useProgram();
+    GL.useProgram(lineShader.program);
 
     GL.uniform1f(
-        lineWidthLocation,
+        lineShader.getUniformLocation("lineWidth"),
         lineWidth
     );
 
@@ -131,22 +95,25 @@ function initialize()
 
     nodeCount = rows * cols;
 
-    nodePositionsX = new Float32Array(nodeCount);
-    nodePositionsY = new Float32Array(nodeCount);
+    nodePositionsX = new Float64Array(nodeCount);
+    nodePositionsY = new Float64Array(nodeCount);
 
-    nodeLastPositionsX = new Float32Array(nodeCount);
-    nodeLastPositionsY = new Float32Array(nodeCount);
+    nodeLastPositionsX = new Float64Array(nodeCount);
+    nodeLastPositionsY = new Float64Array(nodeCount);
 
-    nodeVelocitiesX = new Float32Array(nodeCount);
-    nodeVelocitiesY = new Float32Array(nodeCount);
+    nodeVelocitiesX = new Float64Array(nodeCount);
+    nodeVelocitiesY = new Float64Array(nodeCount);
     
-    nodeForcesX = new Float32Array(nodeCount);
-    nodeForcesY = new Float32Array(nodeCount);
+    nodeForcesX = new Float64Array(nodeCount);
+    nodeForcesY = new Float64Array(nodeCount);
 
-    nodeRows = new Float32Array(nodeCount);
-    nodeCols = new Float32Array(nodeCount);
+    nodeRows = new Float64Array(nodeCount);
+    nodeCols = new Float64Array(nodeCount);
 
     nodeIsSelected = new Array(nodeCount);
+
+    mouseRelativePosX = new Float64Array(nodeCount);
+    mouseRelativePosY = new Float64Array(nodeCount);
 
     nodeLinkCount = (rows - 1) * cols + (cols - 1) * rows;
     
@@ -202,7 +169,6 @@ function physicsLoop()
 
     updateForces();    
     updatePositions();    
-    limitSpringLength();
 
     if (frametimeList.length > 100) {   
         frametimeList.shift();
@@ -225,27 +191,16 @@ function renderLoop()
 
 function mouseLoop() 
 {
-    if (mouseDeltaX != 0 || mouseDeltaY != 0) 
-    { 
-        for (let i = 0; i < nodeCount; i++) 
-        {
-            if (!nodeIsSelected[i]) {
-                continue;
-            }
-
-            nodePositionsX[i] += mouseDeltaX;
-            nodePositionsY[i] += mouseDeltaY;
-            nodeLastPositionsX[i] += mouseDeltaX;
-            nodeLastPositionsY[i] += mouseDeltaY;
+    for (let i = 0; i < nodeCount; i++) 
+    {
+        if (!nodeIsSelected[i]) {
+            continue;
         }
-        
-        mouseDeltaX = 0;
-        mouseDeltaY = 0;
 
-    }
-
-    if (!isRunning) {
-        limitSpringLength();
+        nodePositionsX[i] = mouseRelativePosX[i] + mousePosX;
+        nodePositionsY[i] = mouseRelativePosY[i] + mousePosY;
+        nodeLastPositionsX[i] = mouseRelativePosX[i] + mousePosX;
+        nodeLastPositionsY[i] = mouseRelativePosY[i] + mousePosY;
     }
 
     requestAnimationFrame(mouseLoop);
@@ -258,7 +213,7 @@ function mouseLoop()
 // Smaller timesteps produce more stable results
 const MassInverse = 1.0 / mass;
 const timeStepSquaredTimesMassInverse = timeStep * timeStep * (1.0 / mass);
-const twoTimestimeStepInverse = (1 / (2 * timeStep));
+const twoTimeStepInverse = (1 / (2 * timeStep));
 
 function updatePositions() 
 {
@@ -279,16 +234,16 @@ function updatePositions()
         nodePositionsX[i] += (deltaX + nodeForcesX[i] * timeStepSquaredTimesMassInverse);
         nodePositionsY[i] += (deltaY + nodeForcesY[i] * timeStepSquaredTimesMassInverse);
     
-        nodeVelocitiesX[i] = (twoTimestimeStepInverse * deltaX);
-        nodeVelocitiesY[i] = (twoTimestimeStepInverse * deltaY);
+        nodeVelocitiesX[i] = (twoTimeStepInverse * deltaX);
+        nodeVelocitiesY[i] = (twoTimeStepInverse * deltaY);
 
-        /* Update positions & veolocity Euler 
+        // Update positions & veolocity Euler 
 
-        nodePositionsX[i] += timeStep * nodeVelocitiesX[i] * selected;
-        nodePositionsY[i] += timeStep * nodeVelocitiesY[i] * selected;
+        //nodePositionsX[i] += timeStep * nodeVelocitiesX[i];
+        //nodePositionsY[i] += timeStep * nodeVelocitiesY[i];
 
-        nodeVelocitiesX[i] += timeStep * (nodeForces[i][0] * MassInverse) * selected;
-        nodeVelocitiesY[i] += timeStep * (nodeForces[i][1] * MassInverse) * selected; */
+        //nodeVelocitiesX[i] += timeStep * (nodeForcesX[i] * MassInverse);
+        //nodeVelocitiesY[i] += timeStep * (nodeForcesY[i] * MassInverse); 
 
         // Update last position
 
@@ -342,27 +297,44 @@ function updateForces()
     }
 }
 
+function shuffle(array) {
+    let currentIndex = array.length;
+  
+    // While there remain elements to shuffle...
+    while (currentIndex != 0) {
+  
+      // Pick a remaining element...
+      let randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex--;
+  
+      // And swap it with the current element.
+      [array[currentIndex], array[randomIndex]] = [
+        array[randomIndex], array[currentIndex]];
+    }
+  }  
+
 function limitSpringLength() 
-{
+{    
     for (let i = 0; i < nodeLinkCount; i++) 
     {
-        const sourceIndex = nodeLinks[i][0];
-        const targetIndex = nodeLinks[i][1];
+        const [sourceIndex, targetIndex] = nodeLinks[i];
 
         const diffX = nodePositionsX[targetIndex] - nodePositionsX[sourceIndex];
         const diffY = nodePositionsY[targetIndex] - nodePositionsY[sourceIndex];
     
+        //const distance = Math.sqrt(diffX * diffX + diffY * diffY);
         const distance = fastSqrt(diffX * diffX + diffY * diffY);
     
         if (distance < maxLength) {
             continue;
         }
 
-        const length = distance - maxLength;     
+        //const length = fastSqrt(distance - maxLength);    
+        const length = distance - maxLength;    
 
         nodePositionsX[sourceIndex] += length * diffX;
         nodePositionsY[sourceIndex] += length * diffY; 
-
+        
         nodeLastPositionsX[sourceIndex] += length * diffX;
         nodeLastPositionsY[sourceIndex] += length * diffY;
 
@@ -378,6 +350,15 @@ function limitSpringLength()
  * Rendering
  */
 
+const circleVert = await (await fetch(document.querySelector("#circle-vert").src)).text();
+const circleFrag = await (await fetch(document.querySelector("#circle-frag").src)).text();
+
+const lineVert = await (await fetch(document.querySelector("#line-vert").src)).text();
+const lineFrag = await (await fetch(document.querySelector("#line-frag").src)).text();
+
+const cursorVert = await (await fetch(document.querySelector("#cursor-vert").src)).text();
+const cursorFrag = await (await fetch(document.querySelector("#cursor-frag").src)).text();
+
 const GL = canvas.getContext("webgl2");
 
 GL.viewport(0, 0, GL.drawingBufferWidth, GL.drawingBufferHeight);
@@ -387,30 +368,11 @@ GL.clear(GL.COLOR_BUFFER_BIT);
 GL.enable(GL.BLEND)
 GL.blendFunc(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA);
 
-const circleVert = await (await fetch(document.querySelector("#circle-vert").src)).text();
-const circleFrag = await (await fetch(document.querySelector("#circle-frag").src)).text();
+const rect = new Rect();
 
-const circleShader = await createShader(circleVert, circleFrag);
-
-const lineVert = await (await fetch(document.querySelector("#line-vert").src)).text();
-const lineFrag = await (await fetch(document.querySelector("#line-frag").src)).text();
-
-const lineShader = await createShader(lineVert, lineFrag);
-
-const cursorVert = await (await fetch(document.querySelector("#cursor-vert").src)).text();
-const cursorFrag = await (await fetch(document.querySelector("#cursor-frag").src)).text();
-
-const cursorShader = await createShader(cursorVert, cursorFrag);
-
-const circleVAO = new RectInstanced(circleShader);
-const lineVAO = new RectInstanced(lineShader);
-const cursorVAO = new Rect(cursorShader);
-
-lineVAO.useProgram();
-
-const lineWidthLocation = GL.getUniformLocation(lineVAO.shader, "lineWidth");
-const sourcePosLocation = GL.getUniformLocation(lineVAO.shader, "sourcePositions");
-const targetPosLocation = GL.getUniformLocation(lineVAO.shader, "targetPositions");
+const circleShader = new createShader(circleVert, circleFrag);
+const lineShader = new createShader(lineVert, lineFrag);
+const cursorShader = new createShader(cursorVert, cursorFrag);
 
 const INSTANCES_PER_DRAWCALL = 200;
 
@@ -420,7 +382,8 @@ function drawCircles()
 {
     const drawcalls = Math.ceil(nodeCount / INSTANCES_PER_DRAWCALL);
 
-    circleVAO.useProgram();
+    GL.useProgram(circleShader.program);
+    rect.bind();
 
     for (let drawcall = 0; drawcall < drawcalls; drawcall++) 
     {
@@ -444,8 +407,14 @@ function drawCircles()
             );
         }
 
-        circleVAO.set4x2ModelView(matrices)
-        circleVAO.draw(INSTANCES_PER_DRAWCALL);
+        GL.uniformMatrix4x2fv(
+            circleShader.getUniformLocation("modelView"), 
+            false, 
+            matrices,
+            0
+        );
+
+        rect.drawInstanced(INSTANCES_PER_DRAWCALL);
     }
 }
 
@@ -456,7 +425,8 @@ function drawLines()
 {
     const drawcalls = Math.ceil(nodeLinkCount / INSTANCES_PER_DRAWCALL)
 
-    lineVAO.useProgram();
+    GL.useProgram(lineShader.program);
+    rect.bind();
 
     for (let drawcall = 0; drawcall < drawcalls; drawcall++) 
     {
@@ -481,33 +451,37 @@ function drawLines()
         }
 
         GL.uniform2fv(
-            sourcePosLocation,
+            lineShader.getUniformLocation("sourcePositions"),
             sourcePositions
         );
 
         GL.uniform2fv(
-            targetPosLocation,
+            lineShader.getUniformLocation("targetPositions"),
             targetPositions
         );
 
-        lineVAO.draw(INSTANCES_PER_DRAWCALL);
+        rect.drawInstanced(INSTANCES_PER_DRAWCALL);
     }
 }
 
 function drawCursor() 
 {
-    cursorVAO.useProgram();
+    GL.useProgram(cursorShader.program);
+    rect.bind();
 
-    cursorVAO.set4x2ModelView(
+    GL.uniformMatrix4x2fv(
+        cursorShader.getUniformLocation("modelView"), 
+        false, 
         create4x2Matrix(
             mousePosX,
             mousePosY,
             cursorRadius,
             cursorRadius
-        )
+        ),
+        0
     );
 
-    cursorVAO.draw();
+    rect.draw();
 }
 
 /*
@@ -531,62 +505,97 @@ function getMouseDelta(e) {
     ];
 }
 
+let mousePosX = 0;
+let mousePosY = 0;
+
+
 canvas.addEventListener("mousedown", (e) => 
 {
-    const mouse = getMousePos(e);
-
-    mouseDeltaX = 0;
-    mouseDeltaY = 0;
+    [mousePosX, mousePosY] = getMousePos(e);
 
     for (let i = 0; i < nodeCount; i++) 
     {
-        const mouseDiffX = mouse[0] - nodePositionsX[i];
-        const mouseDiffY = mouse[1] - nodePositionsY[i];
+        const mouseDiffX = nodePositionsX[i] - mousePosX;
+        const mouseDiffY = nodePositionsY[i] - mousePosY;
 
-        const distance = fastSqrt(mouseDiffX * mouseDiffX + mouseDiffY * mouseDiffY)
+        const distance = fastSqrt(mouseDiffX * mouseDiffX + mouseDiffY * mouseDiffY);
 
         if (distance < nodeRadius + cursorRadius) {
             nodeIsSelected[i] = true;
+            mouseRelativePosX[i] = mouseDiffX; 
+            mouseRelativePosY[i] = mouseDiffY; 
         }
     } 
 });
 
-let mouseDeltaX = 0;
-let mouseDeltaY = 0;
-
-let mousePosX = 0;
-let mousePosY = 0;
-
 document.addEventListener("mousemove", (e) => 
 {
-    const mouse = getMousePos(e);
-
-    mousePosX = mouse[0];
-    mousePosY = mouse[1];
-
-    if (nodeIsSelected.includes(true)) 
-    {
-        const delta = getMouseDelta(e);
-
-        mouseDeltaX += delta[0];
-        mouseDeltaY += delta[1];
-    } 
+    [mousePosX, mousePosY] = getMousePos(e);
 });
 
-document.addEventListener("wheel", (e) => 
+canvas.addEventListener("wheel", (e) => 
 {
-    cursorRadius += -0.001 * e.deltaY;
+    e.preventDefault();
+    e.stopPropagation();
 
-    cursorRadius = 
-        cursorRadius > 0.5 ? 0.5 : 
-        cursorRadius < 0.01 ? 0.01 : 
-        cursorRadius
-    ;
+    if (canvas.matches(':hover')) {
+        cursorRadius += -0.0002 * e.deltaY;
+        cursorRadius = Math.max(Math.min(cursorRadius, 0.5), 0.0225);
+    }
 });
 
 canvas.addEventListener("mouseleave", (e) => nodeIsSelected.fill(false));
 canvas.addEventListener("mouseup", (e) => nodeIsSelected.fill(false));
 
+/*
+ * Input Events
+ */
+
+
+toggleInput.onclick = (e) => {
+    startTime = Date.now();
+    isRunning = !isRunning;
+    toggleInput.innerText = isRunning ? "Stop Simulation" : "Start Simulation";
+    if (isRunning) {
+        intervalID = setInterval(physicsLoop, 0 );
+    } else {
+        clearInterval(intervalID);
+    }
+};
+
+rowsInput.oninput = (e) => { 
+    rows = parseInt(e.target.value); 
+    rowsInput.labels[0].innerText = "Rows: " + parseInt(e.target.value);
+    initialize(); 
+};
+
+colsInput.oninput = (e) => { 
+    cols = parseInt(e.target.value); 
+    colsInput.labels[0].innerText = "Cols: " + parseInt(e.target.value);
+    initialize(); 
+};
+
+springForceInput.oninput = (e) => {
+    springForce = springForceFactor * parseFloat(e.target.value);
+    springForceInput.labels[0].innerText = "Spring Force: " + parseFloat(e.target.value).toFixed(2);
+}
+
+dampingInput.oninput = (e) => {
+    damping = dampingFactor * parseFloat(e.target.value);
+    dampingInput.labels[0].innerText = "Damping: " + parseFloat(e.target.value).toFixed(2);
+}
+
+maxSpringLengthInput.oninput = (e) => {
+    maxSpringLength = parseFloat(e.target.value);
+    maxLength = maxSpringLength * step;
+    maxSpringLengthInput.labels[0].innerText = "Max Spring Length: " + parseFloat(e.target.value).toFixed(2);
+}
+
+/*
+ * Entry point
+ */
+
 initialize();
 renderLoop();
 mouseLoop();
+setInterval(limitSpringLength, 0);

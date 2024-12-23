@@ -1,4 +1,6 @@
-import { GL } from "../utils/renderContext.js"
+
+const canvas = document.querySelector("#glcanvas");
+const GL = canvas.getContext("webgl2");
 
 export async function loadImageFromSrc(imageSrc) {
 	return new Promise((resolve, reject) => {

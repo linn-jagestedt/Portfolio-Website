@@ -1,5 +1,7 @@
 import { createTexture } from "../utils/texture.js";
-import { GL } from "../utils/renderContext.js";
+
+const canvas = document.querySelector("#glcanvas");
+const GL = canvas.getContext("webgl2");
 
 const framebufferTextures = new Map();
 
@@ -30,7 +32,6 @@ export function setFrameBufferSize(framebuffer, width, height) {
 export function getFrameBufferTexture(framebuffer) {
     return framebufferTextures.get(framebuffer);
 }
-
 
 export function freeFrameBuffer() {
     let texture = framebufferTextures.get(framebuffer);

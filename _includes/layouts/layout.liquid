@@ -4,6 +4,25 @@
     <meta charset="utf-8">
     <title>{{ title }}</title>
     <link rel="stylesheet" href="/css/bundle.css">
+    {% for script in scripts %}
+      <script
+        defer
+        type="module"
+        src="{{ script }}"></script>
+    {% endfor %}
+    {% for shader in shaders %}
+      <script
+        id="{{ shader }}-vert"
+        src="shaders/{{ title | slugify }}/{{ shader }}.vert"
+        type="x-shader/x-vertex"></script>
+    {% endfor %}
+
+    {% for shader in shaders %}
+      <script
+        id="{{ shader }}-frag"
+        src="shaders/{{ title | slugify }}/{{ shader }}.frag"
+        type="x-shader/x-fragment"></script>
+    {% endfor %}
   </head>
   <body>
     {{ content }}

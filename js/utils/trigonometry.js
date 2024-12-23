@@ -1,6 +1,6 @@
 
 const trigSteps = 256;
-const sqrtSteps = 8192 * 2;
+const sqrtSteps = 4096 * 4;
 
 const sinTable = new Float32Array(trigSteps);
 const cosTable = new Float32Array(trigSteps);
