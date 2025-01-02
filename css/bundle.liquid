@@ -1,0 +1,10 @@
+---
+permalink: css/bundle.css
+---
+
+{% capture scss_content %}
+    {% include "_includes/css/site.scss"  %}
+    {% include "_includes/components/header.scss" %}
+    {% include "_includes/components/footer.scss" %}
+{% endcapture %}
+{{ scss_content | compileSCSS }}

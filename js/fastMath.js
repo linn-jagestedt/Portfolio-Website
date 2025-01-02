@@ -1,4 +1,3 @@
-
 const trigSteps = 256;
 const sqrtSteps = 4096 * 4;
 

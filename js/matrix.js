@@ -1,5 +1,3 @@
-import { fastSin, fastCos } from "./trigonometry.js";
-
 const matrix4x4 = new Float32Array(16);
 
 export function create4x4Matrix(positionX, positionY, positionZ, scaleX, scaleY, scaleZ) 

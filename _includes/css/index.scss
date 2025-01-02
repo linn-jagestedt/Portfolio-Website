@@ -1,0 +1,18 @@
+#introduction {
+    display: flex;
+    flex-direction: row;
+}
+
+.text {
+    padding: 20px;
+    width: 50%;
+}
+
+.portrait {
+    padding: 20px;
+    width: 50%;
+}
+
+.portrait img {
+    width: 100%;
+}

@@ -1,0 +1,19 @@
+---
+layout: layouts/layout.liquid
+---
+
+<main>
+  <section id="demo-window">
+    <canvas
+      id="glcanvas"
+      width="600px"
+      height="600px">Your browser does not seem to support canvases.</canvas>
+    <div id="demo-options" class="demo-options">
+      {% include "demo-options/{{ page.fileSlug }}.html" %}
+    </div>
+  </section>
+
+  <section id="article">
+    {{ content }}
+  </section>
+</main>

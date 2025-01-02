@@ -4,27 +4,49 @@
     <meta charset="utf-8">
     <title>{{ title }}</title>
     <link rel="stylesheet" href="/css/bundle.css">
+
+    <style>
+      {% for style in styles %}
+        {% capture style_content %}
+          {% include "_includes/css/{{ style }}" %}
+        {% endcapture %}
+        {{ style_content | compileSCSS | minifyCSS }}
+      {% endfor %}
+    </style>
+
     {% for script in scripts %}
-      <script
-        defer
-        type="module"
-        src="{{ script }}"></script>
-    {% endfor %}
-    {% for shader in shaders %}
-      <script
-        id="{{ shader }}-vert"
-        src="shaders/{{ title | slugify }}/{{ shader }}.vert"
-        type="x-shader/x-vertex"></script>
+      <script defer type="module">
+        {% capture js_content %}
+          {% include "_includes/js/{{ script }}.js" %}
+        {% endcapture %}
+        {{ js_content }}
+      </script>
     {% endfor %}
 
     {% for shader in shaders %}
-      <script
-        id="{{ shader }}-frag"
-        src="shaders/{{ title | slugify }}/{{ shader }}.frag"
-        type="x-shader/x-fragment"></script>
+      <script id="{{ shader }}-vert" type="x-shader/x-vertex">
+
+        {% capture vert_content %}
+          {% include "_includes/shaders/{{ title | slugify }}/{{ shader }}.vert" %}
+        {% endcapture %}
+        {{ vert_content | minifyGLSLVERT }}
+
+      </script>
+    {% endfor %}
+
+    {% for shader in shaders %}
+      <script id="{{ shader }}-frag" type="x-shader/x-fragment">
+
+        {% capture frag_content %}
+          {% include "_includes/shaders/{{ title | slugify }}/{{ shader }}.frag" %}
+        {% endcapture %}
+        {{ frag_content | minifyGLSLFRAG }}
+      </script>
     {% endfor %}
   </head>
   <body>
+    {% include "components/header.liquid" %}
     {{ content }}
+    {% include "components/footer.liquid" %}
   </body>
 </html>

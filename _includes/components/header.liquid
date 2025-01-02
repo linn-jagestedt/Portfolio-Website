@@ -1,0 +1,13 @@
+<header>
+  <nav>
+    <ul>
+      {% for page in navigation %}
+        <a href="{{ page.link }}">
+          <li>
+            {{ page.name }}
+          </li>
+        </a>
+      {% endfor %}
+    </ul>
+  </nav>
+</header>

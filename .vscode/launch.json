@@ -1,0 +1,20 @@
+{
+    "configurations": [
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Launch my cool app",
+            "url": "http://localhost:8080"
+        },
+        {
+            "name": "11ty",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceRoot}/node_modules/.bin/eleventy",
+            "stopOnEntry": false,
+            "args": ["--watch"],
+            "cwd": "${workspaceRoot}",
+            "console": "internalConsole",
+        }
+    ]
+}

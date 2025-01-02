@@ -1,17 +1,15 @@
-import createShader from "../utils/shader.js";
-import Rect from "../utils/rect.js"
-import { uploadImageData, loadImageFromSrc, createTextureFromImage, setTextureFilter } from "../utils/texture.js";
-import { createFrameBuffer, setFrameBufferSize, getFrameBufferTexture } from "../utils/framebuffer.js";
-import { create4x2Matrix } from "../utils/matrix.js";
-import Shader from "../utils/shader.js";
+import Rect from "/js/rect.js"
+import { loadImageFromSrc, Texture, Framebuffer  } from "/js/texture.js";
+import { create4x2Matrix } from "/js/matrix.js";
+import Shader from "/js/shader.js";
 
 let image = await loadImageFromSrc(document.querySelector("#image").src);
 
-const YCbCrCombineFrag = await (await fetch(document.querySelector("#ycbcr-combine-frag").src)).text();
-const YCbCrCombineVert = await (await fetch(document.querySelector("#ycbcr-combine-vert").src)).text();
+const YCbCrCombineFrag = document.getElementById("ycbcr-combine-frag").innerText;
+const YCbCrCombineVert = document.getElementById("ycbcr-combine-vert").innerText;
 
-const RGBToYCBCRVert = await (await fetch(document.querySelector("#rgb-to-ycbcr-vert").src)).text();
-const RGBToYCBCRFrag = await (await fetch(document.querySelector("#rgb-to-ycbcr-frag").src)).text();
+const RGBToYCBCRVert = document.getElementById("rgb-to-ycbcr-vert").innerText;
+const RGBToYCBCRFrag = document.getElementById("rgb-to-ycbcr-frag").innerText;
 
 const canvas = document.querySelector("#glcanvas");
 const GL = canvas.getContext("webgl2");
@@ -26,10 +24,10 @@ GL.clear(GL.COLOR_BUFFER_BIT);
 GL.enable(GL.BLEND)
 GL.blendFunc(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA)
 
-const rect = new Rect();
+const rect = new Rect(GL);
 
-const RGBToYCBCRShader = new Shader(RGBToYCBCRVert, RGBToYCBCRFrag);
-const YCbCrCombineShader = new Shader(YCbCrCombineVert, YCbCrCombineFrag);
+const RGBToYCBCRShader = new Shader(GL, RGBToYCBCRVert, RGBToYCBCRFrag);
+const YCbCrCombineShader = new Shader(GL, YCbCrCombineVert, YCbCrCombineFrag);
 
 GL.useProgram(YCbCrCombineShader.program);
 
@@ -63,20 +61,21 @@ labelY.innerText = labelY.innerText.split(":")[0] + ": " + scaleY;
 labelCb.innerText = labelCb.innerText.split(":")[0] + ": " + scaleCb;
 labelCr.innerText = labelCr.innerText.split(":")[0] + ": " + scaleCr;
 
-const YCbCrTexture = createTextureFromImage(image); 
+const YCbCrTexture = new Texture(GL); 
+YCbCrTexture.uploadImageData(image);
 
-const framebufferY = createFrameBuffer(image.width * scaleY, image.height * scaleY);
-const framebufferCb = createFrameBuffer(image.width * scaleCb, image.height * scaleCb);
-const framebufferCr = createFrameBuffer(image.width * scaleCr, image.height * scaleCr);
+const framebufferY = new Framebuffer(GL);
+const framebufferCb = new Framebuffer(GL);
+const framebufferCr = new Framebuffer(GL);
 
-const framebufferTexY = getFrameBufferTexture(framebufferY);
-const framebufferTexCb = getFrameBufferTexture(framebufferCb);
-const framebufferTexCr = getFrameBufferTexture(framebufferCr);
+framebufferY.setFrameBufferSize(image.width * scaleY, image.height * scaleY);
+framebufferCb.setFrameBufferSize(image.width * scaleCb, image.height * scaleCb);
+framebufferCr.setFrameBufferSize(image.width * scaleCr, image.height * scaleCr);
 
 sliderY.oninput = () => {
 	scaleY = sliderY.value / 100;
 	labelY.innerText = labelY.innerText.split(":")[0] + ": " + scaleY;
-	setFrameBufferSize(framebufferY, image.width * scaleY, image.height * scaleY);
+	framebufferY.setFrameBufferSize(image.width * scaleY, image.height * scaleY);
 	updateFileSize();
 	draw();
 };
@@ -84,7 +83,7 @@ sliderY.oninput = () => {
 sliderCb.oninput = () => {
 	scaleCb = sliderCb.value / 100;
 	labelCb.innerText = labelCb.innerText.split(":")[0] + ": " + scaleCb;
-	setFrameBufferSize(framebufferCb, image.width * scaleCb, image.height * scaleCb);
+	framebufferCb.setFrameBufferSize(image.width * scaleCb, image.height * scaleCb);
 	updateFileSize();
 	draw();
 };
@@ -92,7 +91,7 @@ sliderCb.oninput = () => {
 sliderCr.oninput = () => {
 	scaleCr = sliderCr.value / 100;
 	labelCr.innerText = labelCr.innerText.split(":")[0] + ": " + scaleCr;
-	setFrameBufferSize(framebufferCr, image.width * scaleCr, image.height * scaleCr);
+	framebufferCr.setFrameBufferSize(image.width * scaleCr, image.height * scaleCr);
 	updateFileSize();
 	draw();
 };
@@ -105,10 +104,13 @@ linear_checkbox.oninput = updateFilter;
 
 updateFilter();
 
-function updateFilter() {
-	setTextureFilter(framebufferTexY, nearest_checkbox.checked ? GL.NEAREST : GL.LINEAR);
-	setTextureFilter(framebufferTexCb, nearest_checkbox.checked ? GL.NEAREST : GL.LINEAR);
-	setTextureFilter(framebufferTexCr, nearest_checkbox.checked ? GL.NEAREST : GL.LINEAR);
+function updateFilter() 
+{
+	const filter = nearest_checkbox.checked ? GL.NEAREST : GL.LINEAR;
+
+	framebufferY.texture.setTextureFilter(filter);
+	framebufferCb.texture.setTextureFilter(filter);
+	framebufferCr.texture.setTextureFilter(filter);
 
 	draw();
 };
@@ -122,16 +124,16 @@ async function updateImage(event) {
 	
 	image = await loadImageFromSrc(url);
 	
-	uploadImageData(YCbCrTexture, image); 
+	YCbCrTexture.uploadImageData(image); 
 
 	canvas.width = image.width;
 	canvas.height = image.width;
 
 	GL.viewport(0, 0, GL.drawingBufferWidth, GL.drawingBufferHeight);
 
-	setFrameBufferSize(framebufferY, image.width * scaleY, image.height * scaleY);
-	setFrameBufferSize(framebufferCb, image.width * scaleCb, image.height * scaleCb);
-	setFrameBufferSize(framebufferCr, image.width * scaleCr, image.height * scaleCr);
+	framebufferY.setFrameBufferSize(image.width * scaleY, image.height * scaleY);
+	framebufferCb.setFrameBufferSize(image.width * scaleCb, image.height * scaleCb);
+	framebufferCr.setFrameBufferSize(image.width * scaleCr, image.height * scaleCr);
 
 	GL.useProgram(YCbCrCombineShader.program);
 
@@ -172,11 +174,11 @@ function updateFileSize() {
 function draw() 
 {
 	GL.activeTexture(GL.TEXTURE0);
-	GL.bindTexture(GL.TEXTURE_2D, YCbCrTexture);
+	GL.bindTexture(GL.TEXTURE_2D, YCbCrTexture.textureID);
 
 	GL.useProgram(RGBToYCBCRShader.program);
 	
-	GL.bindFramebuffer(GL.FRAMEBUFFER, framebufferY);  	
+	GL.bindFramebuffer(GL.FRAMEBUFFER, framebufferY.framebufferID);  	
 
 	GL.uniformMatrix4x2fv(
 		RGBToYCBCRShader.getUniformLocation("modelView"), 
@@ -191,7 +193,7 @@ function draw()
 	rect.draw();
 
 	
-	GL.bindFramebuffer(GL.FRAMEBUFFER, framebufferCb);  	
+	GL.bindFramebuffer(GL.FRAMEBUFFER, framebufferCb.framebufferID);  	
 
 	GL.uniformMatrix4x2fv(
 		RGBToYCBCRShader.getUniformLocation("modelView"), 
@@ -205,7 +207,7 @@ function draw()
 
 	rect.draw();
 
-	GL.bindFramebuffer(GL.FRAMEBUFFER, framebufferCr);  	
+	GL.bindFramebuffer(GL.FRAMEBUFFER, framebufferCr.framebufferID);  	
 
 	GL.uniformMatrix4x2fv(
 		RGBToYCBCRShader.getUniformLocation("modelView"), 
@@ -224,11 +226,11 @@ function draw()
 	GL.bindFramebuffer(GL.FRAMEBUFFER, null);  
 
 	GL.activeTexture(GL.TEXTURE0);
-	GL.bindTexture(GL.TEXTURE_2D, framebufferTexY);
+	GL.bindTexture(GL.TEXTURE_2D, framebufferY.texture.textureID);
 	GL.activeTexture(GL.TEXTURE1);
-	GL.bindTexture(GL.TEXTURE_2D, framebufferTexCb);
+	GL.bindTexture(GL.TEXTURE_2D, framebufferCb.texture.textureID);
 	GL.activeTexture(GL.TEXTURE2);
-	GL.bindTexture(GL.TEXTURE_2D, framebufferTexCr);
+	GL.bindTexture(GL.TEXTURE_2D, framebufferCr.texture.textureID);
 
 	rect.draw();
 }

@@ -1,7 +1,7 @@
-import createShader from "../utils/shader.js"
-import { create4x2Matrix, set4x2Matrix } from "../utils/matrix.js"
-import Rect from "../utils/rect.js"
-import { fastSqrt } from "../utils/trigonometry.js";
+import Shader from "/js/shader.js"
+import { create4x2Matrix, set4x2Matrix } from "/js/matrix.js"
+import Rect from "/js/rect.js"
+import { fastSqrt } from "/js/fastMath.js";
 
 const rowsInput = document.getElementById("rows");
 const colsInput = document.getElementById("cols");
@@ -350,14 +350,14 @@ function limitSpringLength()
  * Rendering
  */
 
-const circleVert = await (await fetch(document.querySelector("#circle-vert").src)).text();
-const circleFrag = await (await fetch(document.querySelector("#circle-frag").src)).text();
+const circleVert = document.getElementById("circle-vert").innerText;
+const circleFrag = document.getElementById("circle-frag").innerText;
 
-const lineVert = await (await fetch(document.querySelector("#line-vert").src)).text();
-const lineFrag = await (await fetch(document.querySelector("#line-frag").src)).text();
+const lineVert = document.getElementById("line-vert").innerText;
+const lineFrag = document.getElementById("line-frag").innerText;
 
-const cursorVert = await (await fetch(document.querySelector("#cursor-vert").src)).text();
-const cursorFrag = await (await fetch(document.querySelector("#cursor-frag").src)).text();
+const cursorVert = document.getElementById("cursor-vert").innerText;
+const cursorFrag = document.getElementById("cursor-frag").innerText;
 
 const GL = canvas.getContext("webgl2");
 
@@ -368,11 +368,11 @@ GL.clear(GL.COLOR_BUFFER_BIT);
 GL.enable(GL.BLEND)
 GL.blendFunc(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA);
 
-const rect = new Rect();
+const rect = new Rect(GL);
 
-const circleShader = new createShader(circleVert, circleFrag);
-const lineShader = new createShader(lineVert, lineFrag);
-const cursorShader = new createShader(cursorVert, cursorFrag);
+const circleShader = new Shader(GL, circleVert, circleFrag);
+const lineShader = new Shader(GL, lineVert, lineFrag);
+const cursorShader = new Shader(GL, cursorVert, cursorFrag);
 
 const INSTANCES_PER_DRAWCALL = 200;
 

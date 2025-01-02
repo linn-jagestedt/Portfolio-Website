@@ -1,18 +1,22 @@
 ---
-title: Image processing demos
+title: Home
 permalink: /index.html
 layout: layouts/layout.liquid
 eleventyExcludeFromCollections: true
+styles: ["index.scss"]
 ---
 
-<ul class="page-list">
-    {% for page in collections.all %}
-        <a href="{{page.url}}">
-            <li>
-                <h3>{{ page.data.title }}</h3>
-                <h3>{{ page.data.description }}</h3>
-                <img src="{{ page.data.thumbnail }}" />
-            </li>
-        </a>
-    {% endfor %}
-</div>
+<section id="introduction">
+
+  <div class="text">
+    <h1>Linn Jägestedt</h1>
+    <h2>Sub title</h2>
+    <p>Lorem ipsum odor amet, consectetuer adipiscing elit. Risus scelerisque cursus venenatis aenean proin quis. Ad lacus pulvinar placerat metus etiam volutpat. Nascetur curae adipiscing sem finibus justo varius varius. Nostra porttitor tempus porta pharetra leo velit egestas ligula. Bibendum penatibus potenti cubilia natoque mollis morbi tempor.
+    </p>
+  </div>
+
+  <div class="portrait">
+    <img src="images/portrait.jpg" />
+  </div>
+
+</section>
