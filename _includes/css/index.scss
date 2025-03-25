@@ -1,18 +1,48 @@
-#introduction {
-    display: flex;
-    flex-direction: row;
+#banner {
+    background-image: url("../images/portrait.jpg");
+    height: 600px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position-x: right;
+
+    article {
+        margin: 160px 80px;
+        max-width: 520px;
+        float: left;
+        
+        h1 {
+            font-size: 4.3em;
+            margin: 0;
+        }
+        
+        h2 {
+            font-size: 2.6em;
+            margin: 0;
+        }
+        
+        p {
+            
+        }
+    }
 }
 
-.text {
-    padding: 20px;
-    width: 50%;
-}
+#summary {
+    background-color: rgb(84, 124, 84);;
+    color: #000;
 
-.portrait {
-    padding: 20px;
-    width: 50%;
-}
-
-.portrait img {
-    width: 100%;
+    article {        
+        h1 {
+            font-size: 4.3em;
+            margin: 0;
+        }
+        
+        h2 {
+            font-size: 2.6em;
+            margin: 0;
+        }
+        
+        p {
+            
+        }
+    }
 }

@@ -1,12 +1,54 @@
+@font-face {
+    font-family: "Giphurs";
+    font-weight: 900;
+    src: url("../fonts/Giphurs-ExtraBlack.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "Giphurs";
+    font-weight: 700;
+    src: url("../fonts/Giphurs-Black.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "Giphurs";
+    font-weight: 400;
+    src: url("../fonts/Giphurs-Bold.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "Giphurs";
+    font-weight: 300;
+    src: url("../fonts/Giphurs-Medium.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "Giphurs";
+    font-weight: 200;
+    src: url("../fonts/Giphurs-Light.woff2") format("woff2");
+}
+
 body {
+    font-family: "Giphurs", "sans-serif";
     width: 100vw;
     margin: 0;
-    padding: 0;
+    padding: 10px;
+    background-color: #fff;
+    color: #000;
+}
+
+h1 {
+    font-weight: 900;
+}
+
+h2 {
+    font-weight: 400;
+}
+
+p {
+    font-weight: 300;       
 }
 
 section {
-    width: 100%;
-    max-width: 1000px;
-    margin: auto;
-    padding: 40px;
+    width: 100vw;
 }

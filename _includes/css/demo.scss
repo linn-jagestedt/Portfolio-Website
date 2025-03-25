@@ -1,0 +1,17 @@
+canvas {
+    background: white;
+    width: 600px;
+    height: 600px;
+}
+
+#demo-options {
+    max-width: calc(600px - 80px);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin: auto;
+}
+
+#demo-window {
+    display: flex;
+}

@@ -8,6 +8,7 @@ export default function(eleventyConfig)
     // Copy theese files/directories to output 
     eleventyConfig.addPassthroughCopy("textures");  
     eleventyConfig.addPassthroughCopy("images");  
+    eleventyConfig.addPassthroughCopy("fonts");  
 
     // Allows the website to be served to a sub directory.
     // Define the option --pathprefix xxx when building and 

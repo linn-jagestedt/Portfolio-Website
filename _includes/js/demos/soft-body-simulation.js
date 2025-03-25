@@ -95,25 +95,25 @@ function initialize()
 
     nodeCount = rows * cols;
 
-    nodePositionsX = new Float64Array(nodeCount);
-    nodePositionsY = new Float64Array(nodeCount);
+    nodePositionsX = new Float32Array(nodeCount);
+    nodePositionsY = new Float32Array(nodeCount);
 
-    nodeLastPositionsX = new Float64Array(nodeCount);
-    nodeLastPositionsY = new Float64Array(nodeCount);
+    nodeLastPositionsX = new Float32Array(nodeCount);
+    nodeLastPositionsY = new Float32Array(nodeCount);
 
-    nodeVelocitiesX = new Float64Array(nodeCount);
-    nodeVelocitiesY = new Float64Array(nodeCount);
+    nodeVelocitiesX = new Float32Array(nodeCount);
+    nodeVelocitiesY = new Float32Array(nodeCount);
     
-    nodeForcesX = new Float64Array(nodeCount);
-    nodeForcesY = new Float64Array(nodeCount);
+    nodeForcesX = new Float32Array(nodeCount);
+    nodeForcesY = new Float32Array(nodeCount);
 
-    nodeRows = new Float64Array(nodeCount);
-    nodeCols = new Float64Array(nodeCount);
+    nodeRows = new Uint8Array(nodeCount);
+    nodeCols = new Uint8Array(nodeCount);
 
-    nodeIsSelected = new Array(nodeCount);
+    nodeIsSelected = new Uint8Array(nodeCount);
 
-    mouseRelativePosX = new Float64Array(nodeCount);
-    mouseRelativePosY = new Float64Array(nodeCount);
+    mouseRelativePosX = new Float32Array(nodeCount);
+    mouseRelativePosY = new Float32Array(nodeCount);
 
     nodeLinkCount = (rows - 1) * cols + (cols - 1) * rows;
     
@@ -142,7 +142,7 @@ function initialize()
             nodeRows[index] = i; 
             nodeCols[index] = j
 
-            nodeIsSelected[index] = false;
+            nodeIsSelected[index] = 0;
                         
             if (j < cols - 1) {          
                 nodeLinks[nodeLinkIndex] = [index, index + 1];
@@ -193,7 +193,7 @@ function mouseLoop()
 {
     for (let i = 0; i < nodeCount; i++) 
     {
-        if (!nodeIsSelected[i]) {
+        if (nodeIsSelected[i] == 0) {
             continue;
         }
 
@@ -219,7 +219,7 @@ function updatePositions()
 {
     for (let i = 0; i < nodeCount; i++) 
     {
-        if (nodeIsSelected[i]) {
+        if (nodeIsSelected[i] == 1) {
             continue;
         }
 
@@ -315,6 +315,10 @@ function shuffle(array) {
 
 function limitSpringLength() 
 {    
+    if (!isRunning) {
+        return;
+    }
+
     for (let i = 0; i < nodeLinkCount; i++) 
     {
         const [sourceIndex, targetIndex] = nodeLinks[i];
@@ -521,7 +525,7 @@ canvas.addEventListener("mousedown", (e) =>
         const distance = fastSqrt(mouseDiffX * mouseDiffX + mouseDiffY * mouseDiffY);
 
         if (distance < nodeRadius + cursorRadius) {
-            nodeIsSelected[i] = true;
+            nodeIsSelected[i] = 1;
             mouseRelativePosX[i] = mouseDiffX; 
             mouseRelativePosY[i] = mouseDiffY; 
         }
@@ -544,8 +548,8 @@ canvas.addEventListener("wheel", (e) =>
     }
 });
 
-canvas.addEventListener("mouseleave", (e) => nodeIsSelected.fill(false));
-canvas.addEventListener("mouseup", (e) => nodeIsSelected.fill(false));
+canvas.addEventListener("mouseleave", (e) => nodeIsSelected.fill(0));
+canvas.addEventListener("mouseup", (e) => nodeIsSelected.fill(0));
 
 /*
  * Input Events

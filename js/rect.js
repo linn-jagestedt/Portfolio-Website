@@ -14,30 +14,30 @@ export default class Rect
     }
 
     draw() {
-        this.GL.drawElements(this.GL.TRIANGLES, 6, this.GL.UNSIGNED_SHORT, 0);
+        this.GL.drawElements(this.GL.TRIANGLES, 6, this.GL.UNSIGNED_BYTE, 0);
     }
 
     drawInstanced(instances) {
-        this.GL.drawElementsInstanced(this.GL.TRIANGLES, 6, this.GL.UNSIGNED_SHORT, 0, instances);
+        this.GL.drawElementsInstanced(this.GL.TRIANGLES, 6, this.GL.UNSIGNED_BYTE, 0, instances);
     }
 
     createVertexArray() {	
-        const indecies = new Uint16Array([
+        const indecies = new Uint8Array([
             0, 1, 3,
             3, 2, 1,
         ]);
 
-        const position = new Float32Array([
-            -1, -1, 0,
-             1, -1, 0,
-             1,  1, 0,
-            -1,  1, 0,
+        const position = new Int8Array([
+            -127, -127, 0,
+             127, -127, 0,
+             127,  127, 0,
+            -127,  127, 0,
         ]);
 
-        const texcoords = new Float32Array([
-            0,  1,
-            1,  1,
-            1,  0,
+        const texcoords = new Uint8Array([
+            0,  255,
+            255,  255,
+            255,  0,
             0,  0,
         ]);
         
@@ -53,14 +53,14 @@ export default class Rect
         const positionBuffer = this.GL.createBuffer();
         this.GL.bindBuffer(this.GL.ARRAY_BUFFER, positionBuffer);
         this.GL.bufferData(this.GL.ARRAY_BUFFER, position, this.GL.STATIC_DRAW);
-        this.GL.vertexAttribPointer(0, 3, this.GL.FLOAT, false, 0, 0);
+        this.GL.vertexAttribPointer(0, 3, this.GL.BYTE, true, 0, 0);
         
         this.GL.enableVertexAttribArray(1);
         
         const texcoordBuffer = this.GL.createBuffer();
         this.GL.bindBuffer(this.GL.ARRAY_BUFFER, texcoordBuffer);
         this.GL.bufferData(this.GL.ARRAY_BUFFER, texcoords,  this.GL.STATIC_DRAW);
-        this.GL.vertexAttribPointer(1, 2,  this.GL.FLOAT, false, 0, 0);
+        this.GL.vertexAttribPointer(1, 2,  this.GL.UNSIGNED_BYTE, true, 0, 0);
 
         return id;
     }

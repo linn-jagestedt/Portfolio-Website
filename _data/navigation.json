@@ -4,7 +4,15 @@
         "link": "/"
     },
     {
-        "name": "demos",
-        "link": "/demos"
+        "name": "about",
+        "link": "/about"
+    },
+    {
+        "name": "contact",
+        "link": "/contact"
+    },
+    {
+        "name": "WebGL Demos",
+        "link": "/webgl-demos"
     }
 ]

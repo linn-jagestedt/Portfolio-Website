@@ -1,26 +1,41 @@
 header {
     min-height: 60px;
     align-content: center;
-    background-color: brown;
+    background-color: rgb(84, 124, 84);
 
-    ul {
-        display: flex;
-        flex-direction: row;
-        list-style-type: none;
-        padding: 0;
-        margin: auto 20px;
-        float: right;
-    }
+    nav {
+        height: 60px;
+        align-content: center;
+        margin: auto;
 
-    li {
-        font-weight: bold;
-        font-family: sans-serif;;
-        margin: 0 20px 0 10px;
-        text-transform: capitalize;
-    }
+        ul {
+            color: #EEE;
+            display: flex;
+            flex-direction: row;
+            list-style-type: none;
+            padding: 0;
+            margin: auto 80px auto 0;
+            float: right;
 
-    a {
-        text-decoration: none;
-        color: inherit;
+            li {
+                font-size: 1.1em;
+                font-weight: 700;
+                margin: 0 0 0 30px;
+                text-transform: capitalize;
+            }
+
+            li:hover {
+                color: #282;
+            }
+        
+            a {
+                text-decoration: none;
+                color: inherit;
+            }
+
+            .selected::before {
+                content: "<span></span>";
+            }
+        }
     }
 }
